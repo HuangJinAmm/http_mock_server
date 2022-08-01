@@ -1,0 +1,544 @@
+{
+  "is_exiting": false,
+  "can_exit": false,
+  "apptab": "Req",
+  "label": "分页请求示例_get",
+  "is_pop": false,
+  "filter": "",
+  "records_list": {
+    "id": 0,
+    "title": "HTTP测试",
+    "is_sync": false,
+    "selected": false,
+    "sub_items": {
+      "1": {
+        "id": 1,
+        "title": "header示例",
+        "is_sync": true,
+        "selected": false,
+        "sub_items": {}
+      },
+      "2": {
+        "id": 2,
+        "title": "请求参数示例",
+        "is_sync": true,
+        "selected": false,
+        "sub_items": {}
+      },
+      "3": {
+        "id": 3,
+        "title": "请求体示例",
+        "is_sync": true,
+        "selected": false,
+        "sub_items": {}
+      },
+      "4": {
+        "id": 4,
+        "title": "转发示例",
+        "is_sync": true,
+        "selected": false,
+        "sub_items": {}
+      },
+      "7": {
+        "id": 7,
+        "title": "分页请求示例",
+        "is_sync": true,
+        "selected": false,
+        "sub_items": {
+          "8": {
+            "id": 8,
+            "title": "分页请求示例_get",
+            "is_sync": true,
+            "selected": false,
+            "sub_items": {}
+          }
+        }
+      },
+      "9": {
+        "id": 9,
+        "title": "路径示例",
+        "is_sync": true,
+        "selected": false,
+        "sub_items": {
+          "5": {
+            "id": 5,
+            "title": "路径示例-regex",
+            "is_sync": true,
+            "selected": false,
+            "sub_items": {}
+          },
+          "6": {
+            "id": 6,
+            "title": "路径示例-单个",
+            "is_sync": true,
+            "selected": false,
+            "sub_items": {}
+          }
+        }
+      },
+      "10": {
+        "id": 10,
+        "title": "响应模板示例",
+        "is_sync": true,
+        "selected": true,
+        "sub_items": {}
+      },
+      "11": {
+        "id": 11,
+        "title": "请求相关参数示例",
+        "is_sync": true,
+        "selected": false,
+        "sub_items": {}
+      }
+    }
+  },
+  "list_selected": 10,
+  "list_selected_str": "响应模板示例",
+  "records": {
+    "0": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "",
+        "method": "GET",
+        "head": {
+          "inputs": [
+            {
+              "selected": true,
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "selected": true,
+              "key": "",
+              "value": ""
+            }
+          ]
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "1": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/headers",
+        "method": "GET",
+        "head": {
+          "inputs": [
+            {
+              "selected": true,
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "selected": true,
+              "key": "x-abc",
+              "value": "\\w{4}"
+            },
+            {
+              "selected": true,
+              "key": "x-xyz",
+              "value": "^\\d{4}$"
+            }
+          ]
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "{\n\"headers\":{{headers}},\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "2": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/query?q=^\\d{3}$&b=123",
+        "method": "GET",
+        "head": {
+          "inputs": []
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "{\"query_params\":{{query_params}}}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": false,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "3": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/post",
+        "method": "POST",
+        "head": {
+          "inputs": []
+        },
+        "body": "{\"a\":\"^\\\\d{3}$\",\"b\":\"\\\\w+\"}",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 200,
+          "body": "{\"body\":{{body}},}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "4": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/baidu",
+        "method": "GET",
+        "head": {
+          "inputs": []
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Relay",
+          "dist_url": "http://www.baidu.com",
+          "delay": 0,
+          "code": 0,
+          "body": "",
+          "headers": {
+            "inputs": []
+          }
+        }
+      }
+    },
+    "5": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/regex/<\\\\d{4}>",
+        "method": "GET",
+        "head": {
+          "inputs": [
+            {
+              "selected": false,
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "selected": false,
+              "key": "",
+              "value": ""
+            }
+          ]
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "{\n\"path\":{{path}}\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "6": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/one/:group/:name",
+        "method": "GET",
+        "head": {
+          "inputs": []
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "{\n\"group\":\"{{path.group}}\",\n\"name\":\"{{path.name}}\"\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "7": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/page",
+        "method": "POST",
+        "head": {
+          "inputs": []
+        },
+        "body": "{\n\t\"page\":\"\\\\d+\",\n\t\"count\":\"\\\\d+\"\n}",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "{\n\t\"page\":{{body.page}},\n\t\"count\":{{body.count}},\n\t\"list\":[\n{% for x in range(body.count|INT) %}\n\t\t{ \"id\":\"{{UUID()}}\",\n\"time\":\"{{DATE('%Y-%m-%dT%H:%M:%S')}}\",\n\"name\":\"{{NAME_ZH()}}\",\n\"email\":\"{{EMAIL()}}\"},\n{% endfor %}\n\t]\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "8": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/page?page=\\b\\d{1,3}\\b&count=\\d{1,3}",
+        "method": "GET",
+        "head": {
+          "inputs": []
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "{\n\t\"page\":{{query_params.page}},\n\t\"count\":{{query_params.count}},\n\t\"list\":[\n{% for x in range(query_params.count|INT) %}\n\t\t{ \"id\":\"{{UUID()}}\",\n\"time\":\"{{DATE('%Y-%m-%dT%H:%M:%S')}}\",\n\"name\":\"{{NAME_ZH()}}\",\n\"email\":\"{{EMAIL()}}\"},\n{% endfor %}\n\t]\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "9": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/catch/*aa",
+        "method": "GET",
+        "head": {
+          "inputs": [
+            {
+              "selected": false,
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "selected": false,
+              "key": "",
+              "value": ""
+            }
+          ]
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 0,
+          "body": "{\n\"path\":{{path}}\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "10": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/resp",
+        "method": "GET",
+        "head": {
+          "inputs": []
+        },
+        "body": "",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 1000,
+          "code": 200,
+          "body": "{\n{# 设置变量 #}\n{% set en = BASE64_EN('abcd123') %}\n\"name\":\"{{NAME_ZH()}}\",\n\"email\":\"{{EMAIL()}}\",\n\"en_name\":\"{{NAME_EN()}}\",\n\"add\":\"{{2*4+3/2}}\",\n\"user\":\"{{USERNAME()}}\",\n\"ip4\":\"{{IPV4()}}\"，\n\"ip6\":\"{{IPV6()}}\",\n\"mac\":\"{{MAC()}}\",\n\"UserAgent\":\"{{USERAGENT()}}\",\n\"uuid\":\"{{UUID()}}\",\n\"age\":\"{{NUM(0,120)}}\"，\n\"now\":\"{{NOW('%Y-%m-%dT%H:%M:%S')}}\",\n\"id\":\"{{NUM_STR(16,16)}}\",\n\"随机字符串长度\":\"{{STR(16,16)}}\",\n\"hex\":\"{{HEX(16,16)}}\",\n\"拼接字符串1\":\"{{DATE('%Y%m%d')}}{{NUM_STR(4,4)}}\",\n\"拼接字符串2\":\"{{DATE('%Y%m%d') ~ NUM_STR(4,4)}}\",\n\"create_time\":\"{{DATE_BEFORE('%Y-%m-%dT%H:%M:%S','2020-01-01T00:00:00')}}\",\n\"更新时间\":\"{{DATE_AFTER('%Y-%m-%dT%H:%M:%S','2022-07-28T00:00:00')}}\",\n\"time\":\"{{DATE('%Y-%m-%dT%H:%M:%S')}}\",\n\"encode\":\"{{en}}\",\n\"decode\":\"{{BASE64_DE(en)}}\",\n\"list\":[\n{# 设置局部变量 #}\n{% with r = 10 %}\n\t{% for x in range(r) %}\n\t\t{ \"id\":\"{{UUID()}}\",\"time\":\"{{DATE('%Y-%m-%dT%H:%M:%S')}}\"},\n\t{% endfor %}\n{% endwith %}\n]\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    },
+    "11": {
+      "is_edit": false,
+      "remark": "",
+      "mock_define_info": {
+        "path": "/test/all/:p1?q2=abc?q1=123",
+        "method": "POST",
+        "head": {
+          "inputs": [
+            {
+              "selected": true,
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "selected": false,
+              "key": "",
+              "value": ""
+            }
+          ]
+        },
+        "body": "{\n\"p1\":123,\n\"p2\":\"abc\"\n}",
+        "returns": {
+          "return_type": "Mock",
+          "dist_url": "",
+          "delay": 0,
+          "code": 200,
+          "body": "{\n\"path\":{{path}},\n\"url\":{{url}},\n\"body\":{{body}},\n\"method\":{{method}},\n\"headers\":{{headers}},\n\"query_params\":{{query_params}}\n}",
+          "headers": {
+            "inputs": [
+              {
+                "selected": true,
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "selected": true,
+                "key": "",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
