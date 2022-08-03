@@ -2,7 +2,6 @@
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::sync::{Arc, RwLock};
-use std::thread;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Local, TimeZone, Utc};
@@ -20,7 +19,6 @@ use uuid::Uuid;
 
 use crate::matchers::comparators::{match_json_key, ValueComparator};
 use crate::matchers::targets::{MultiValueTarget, ValueTarget};
-use crate::matchers::transformers::Transformer;
 use crate::matchers::{diff_str, Matcher};
 
 use super::data::{HttpMockRequest, Mismatch, MockServerHttpResponse, Reason, Tokenizer};
