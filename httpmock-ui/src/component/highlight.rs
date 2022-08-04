@@ -37,7 +37,11 @@ lazy_static! {
         tmh.add(TemplateHintInfo::new("BASE64编码".into(), "BASE64编码".into(),r#"{{BASE64_EN(字符串)}}"#.into()));
         tmh.add(TemplateHintInfo::new("BASE64解码".into(), "BASE64解码".into(),r#"{{BASE64_DE(字符串)}}"#.into()));
 
-        tmh.add(TemplateHintInfo::new("预留".into(), "预留".into(),r#"{{BASE64_DE(字符串)}}"#.into()));
+        tmh.add(TemplateHintInfo::new("转换器模板".into(), "转换器语法模板".into(),"{% filter 过滤器 %}\n需要转换的内容\n{% endfilter %}".into()));
+
+        tmh.add(TemplateHintInfo::new("AES加密ECB模式".into(), "AES加密ECB模式".into(),r#"{{AES_ECB_EN('字符串','密钥')}}"#.into()));
+        tmh.add(TemplateHintInfo::new("AES加密CBC模式".into(), "AES加密CBC模式".into(),r#"{{AES_CBC_EN('字符串','密钥','IV')}}"#.into()));
+        tmh.add(TemplateHintInfo::new("AES加密ECB模式".into(), "AES加密CTR模式".into(),r#"{{AES_CTR_EN('字符串','密钥','IV')}}"#.into()));
         Arc::new(Mutex::new(tmh))
     };
 }
@@ -159,7 +163,7 @@ pub fn code_editor_ui(ui: &mut egui::Ui, code: &mut String, language: &str) {
                 .collapsible(false)
                 .resizable(false)
                 .title_bar(false)
-                .default_width(100.)
+                .min_width(300.)
                 .current_pos(pos)
                 .show(ui.ctx(), |ui| {
                     if TEMPLATE_HINT.lock().unwrap().ui(ui, edit_pos, code) {

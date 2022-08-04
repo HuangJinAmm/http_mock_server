@@ -8,6 +8,7 @@ extern crate lazy_static;
 mod app;
 mod component;
 mod template;
+pub mod aes_tool;
 use app::TemplateApp;
 
 const PORT:&str = dotenv_codegen::dotenv!("PORT");

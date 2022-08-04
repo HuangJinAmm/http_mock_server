@@ -11,6 +11,8 @@ use fake::StringFaker;
 use fake::Fake;
 use uuid::Uuid;
 
+use crate::aes_tool::{aes_dec_ecb_string, aes_enc_ecb_string, aes_dec_cbc_string, aes_enc_cbc_string, aes_dec_ctr_string, aes_enc_ctr_string};
+
 
 // const REQ_TEMPLATE: &str = "req_template";
 // const ASCII: &str = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@";
@@ -44,6 +46,17 @@ lazy_static! {
 
         t_env.add_function("BASE64_EN",fake_base64_en);
         t_env.add_function("BASE64_DE",fake_base64_de);
+        t_env.add_function("AES_ECB_EN", aes_enc_ecb);
+        t_env.add_function("AES_ECB_DE", aes_dec_ecb);
+        t_env.add_function("AES_CBC_EN", aes_enc_cbc);
+        t_env.add_function("AES_CBC_DE", aes_dec_cbc);
+        t_env.add_function("AES_CTR_EN", aes_enc_ctr);
+        t_env.add_function("AES_CTR_DE", aes_dec_ctr);
+
+        t_env.add_filter("base64Encode", fake_base64_en);
+        t_env.add_filter("AesEcbEnc", aes_enc_ecb);
+        t_env.add_filter("AesCbcEnc", aes_enc_cbc);
+        t_env.add_filter("AesCtrEnc", aes_enc_ctr);
         let source = Source::new();
         t_env.set_source(source);
         Arc::new(Mutex::new(t_env))
@@ -64,6 +77,42 @@ lazy_static! {
 //         .unwrap_or_else(|_s| template.to_string());
 //     Ok(result)
 // }
+
+fn aes_dec_ecb(_state: &State<'_, '_>, value: String,key:String) -> Result<String,Error> {
+    aes_dec_ecb_string(key.as_str(), value.as_str())
+        .map(|res| base64::encode(res))
+        .map_err(|e| Error::new(ErrorKind::InvalidArguments,e))
+}
+
+fn aes_enc_ecb(_state: &State<'_, '_>, value: String,key:String) -> Result<String,Error> {
+    aes_enc_ecb_string(key.as_str(), value.as_str())
+        .map(|res| base64::encode(res))
+        .map_err(|e| Error::new(ErrorKind::InvalidArguments,e))
+}
+
+fn aes_dec_cbc(_state: &State<'_, '_>, value: String,key:String,iv:String) -> Result<String,Error> {
+    aes_dec_cbc_string(key.as_str(), value.as_str(),iv.as_str())
+        .map(|res| base64::encode(res))
+        .map_err(|e| Error::new(ErrorKind::InvalidArguments,e))
+}
+
+fn aes_enc_cbc(_state: &State<'_, '_>, value: String,key:String,iv:String) -> Result<String,Error> {
+    aes_enc_cbc_string(key.as_str(), value.as_str(),iv.as_str())
+        .map(|res| base64::encode(res))
+        .map_err(|e| Error::new(ErrorKind::InvalidArguments,e))
+}
+
+fn aes_dec_ctr(_state: &State<'_, '_>, value: String,key:String,iv:String) -> Result<String,Error> {
+    aes_dec_ctr_string(key.as_str(), value.as_str(),iv.as_str())
+        .map(|res| base64::encode(res))
+        .map_err(|e| Error::new(ErrorKind::InvalidArguments,e))
+}
+
+fn aes_enc_ctr(_state: &State<'_, '_>, value: String,key:String,iv:String) -> Result<String,Error> {
+    aes_enc_ctr_string(key.as_str(), value.as_str(),iv.as_str())
+        .map(|res| base64::encode(res))
+        .map_err(|e| Error::new(ErrorKind::InvalidArguments,e))
+}
 
 fn fake_name_zh(_state: &State<'_, '_>) -> Result<String, Error> {
     let name = NameZh().fake();

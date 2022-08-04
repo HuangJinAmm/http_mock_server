@@ -42,6 +42,23 @@ impl ContextTree {
         }
     }
 
+    pub fn disable_item(&mut self,id: u64) {
+        if self.id == id {
+            self.is_sync = false;
+        } else {
+            self.disable_sub_item(id);
+        }
+    }
+
+    fn disable_sub_item(&mut self,id: u64) {
+        match self.sub_items.get_mut(&id) {
+            Some(sub) => {
+                sub.disable_item(id)
+            },
+            None => {},
+        }
+    }
+
     pub fn list_all_active_ids(&self) -> Vec<u64> {
         let subs = self.sub_items.clone();
         let mut active_ids = Vec::new();
@@ -140,7 +157,7 @@ impl ContextTree {
                     ui.painter().rect_filled(
                         ui.available_rect_before_wrap(),
                         0.5,
-                        faded_color(Color32::GREEN),);
+                        faded_color(Color32::RED),);
                 }
                 let select_resp = ui
                     .toggle_value(&mut self.selected, self.title.clone())
@@ -204,7 +221,7 @@ impl ContextTree {
                         ui.painter().rect_filled(
                             ui.available_rect_before_wrap(),
                             0.5,
-                            faded_color(Color32::GREEN),);
+                            faded_color(Color32::RED),);
                     }
 
                     let select_resp = ui

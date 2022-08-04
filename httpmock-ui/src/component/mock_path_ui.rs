@@ -3,6 +3,8 @@ use egui::Ui;
 use httpmock_server::common::{mock::MockDefine, data::{HttpMockRequest, MockServerHttpResponse}};
 use crate::app::Method;
 
+use super::highlight::{CodeTheme, highlight};
+
 #[derive(Debug,Default, Clone, serde::Deserialize, serde::Serialize)]
 pub struct MockPathUi {
     path: String,
@@ -188,13 +190,20 @@ impl SelectKeyValueInputs {
                     } in &mut self.inputs
                     {
                         ui.checkbox(selected, "");
+                        let theme = CodeTheme::from_memory(ui.ctx());
+
+                        let mut layouter = |ui: &egui::Ui, string: &str, _wrap_width: f32| {
+                            let layout_job = highlight(ui.ctx(), &theme, string, "json");
+                            // layout_job.wrap.max_width = wrap_width; // no wrapping
+                            ui.fonts().layout_job(layout_job)
+                        };
                         ui.add_sized(
                             ui.available_size(),
                             egui::text_edit::TextEdit::singleline(key),
                         );
                         ui.add_sized(
                             ui.available_size(),
-                            egui::text_edit::TextEdit::singleline(value),
+                            egui::text_edit::TextEdit::singleline(value).layouter(&mut layouter),
                         );
                         ui.end_row();
                     }

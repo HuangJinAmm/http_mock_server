@@ -328,38 +328,64 @@ impl MockHandler for JinjaTemplateHandler {
         let mock_resp_id = req.mock_define.id.to_string();
         let mut ret_mock_resp:Option<MockServerHttpResponse> = None;
         let start = std::time::SystemTime::now();
+
+        //提取相关模板变量
+        let path = req.req_values.clone().unwrap_or_default();
+
+        let mut body = Value::UNDEFINED;
+        let request = req.req.clone();
+        if let Some(b) = &request.body {
+            if let Ok(body_json_value) = serde_json::from_slice::<Value>(b.as_slice()) {
+                body = body_json_value;
+            } else {
+                body = Value::from_safe_string(String::from_utf8_lossy(b.as_slice()).to_string());
+            }
+        }
+        let HttpMockRequest {
+            path: url,
+            method,
+            headers,
+            query_params,
+            ..
+        } = request;
+
+        let temp_ctx = context!(path, url, body, method, headers, query_params);
+
         if let Ok(env) = TEMP_ENV.read() {
-            let body_temp_key = mock_resp_id + "_body";
+            //处理body模板
+            let body_temp_key = format!("{}_body", mock_resp_id.as_str());
             if let Ok(body_temp) = env.get_template(body_temp_key.as_str()) {
-                let path = req.req_values.clone().unwrap_or_default();
-
-                let mut body = Value::UNDEFINED;
-                let request = req.req.clone();
-                if let Some(b) = &request.body {
-                    if let Ok(body_json_value) = serde_json::from_slice::<Value>(b.as_slice()) {
-                        body = body_json_value;
-                    } else {
-                        body = Value::from_safe_string(String::from_utf8_lossy(b.as_slice()).to_string());
-                    }
-                }
-                let HttpMockRequest {
-                    path: url,
-                    method,
-                    headers,
-                    query_params,
-                    ..
-                } = request;
-
                 let mut mock_resp = req.mock_define.resp.clone();
                 let rendered =
-                    match body_temp.render(context!(path, url, body, method, headers, query_params)) {
+                    match body_temp.render(temp_ctx.clone()) {
                         Ok(s) => s,
                         Err(e) => e.to_string(),
                     };
                 mock_resp.body = Some(rendered.as_bytes().to_vec());
                 ret_mock_resp = Some(mock_resp);
             }
+            //处理header的模板
+            if let Some(mock_headers) = req.mock_define.resp.headers.clone(){
+                let dealed_headers:Vec<(String,String)> = mock_headers.into_iter()
+                    .map(|(key,val)|{
+                        let header_key = format!("{}_header_{}", mock_resp_id.as_str(), key.as_str());
+                        if let Ok(header_tmp) = env.get_template(header_key.as_str()) {
+                            let rander_header = match header_tmp.render(temp_ctx.clone()) {
+                                Ok(s) => s,
+                                Err(e) => e.to_string(),
+                            };
+                            (key,rander_header)
+                        } else {
+                            (key,val)
+                        }
+                    }).collect();
+                if let Some(ret_mock_resp_c) = ret_mock_resp.as_mut() {
+                    ret_mock_resp_c.headers = Some(dealed_headers);
+                }
+            }
         }
+
+        //处理延时,本应该放到另外一个handler里面的，这里偷懒了
         let end = start.elapsed().unwrap();
         if let Some(delay) = req.mock_define.resp.delay {
             if let Some(sleep) = delay.checked_sub(end) {

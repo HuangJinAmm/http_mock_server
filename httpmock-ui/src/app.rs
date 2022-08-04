@@ -267,7 +267,10 @@ impl TemplateApp {
                     if let Some(recode) = app.records.get(&id) {
                         let mut mock:MockDefine = recode.mock_define_info.clone().into();
                         mock.id = id; 
-                        let _ = mock_server.add(mock);
+                        if let Err(e) = mock_server.add(mock) {
+                            app.records_list.disable_item(id);
+                            add_notification(&cc.egui_ctx, e.as_str());
+                        }
                     }
                 }
             }
@@ -337,18 +340,7 @@ impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        // frame.set_window_size(egui::Vec2 { x:1200.0, y:800.0 });
-        // let Self {
-        //     label,
-        //     apptab,
-        //     // is_login,
-        //     list_selected,
-        //     list_selected_str,
-        //     records_list,
-        //     records,
-        //     filter,
-        // } = self;
-
+        //显示通知
         self.display_notifications(ctx);
 
         if let Ok((sup, sub)) = self.add_reciever.as_ref().unwrap().try_recv() {
@@ -373,6 +365,7 @@ impl eframe::App for TemplateApp {
                             self.list_selected_str = app.list_selected_str;
                             self.records = app.records;
                             self.records_list = app.records_list;
+                            self.records_list.list_all_active_ids().into_iter().for_each(|id|self.records_list.disable_item(id));
                         }
                     }
                 }
@@ -505,9 +498,16 @@ impl eframe::App for TemplateApp {
                     self.list_selected_str = Some(title)
                 }
                 Delete(subids) => {
-                    subids.iter().for_each(|id|{
-                        self.records.remove(id);
-                    });
+                    if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                        subids.iter().for_each(|id|{
+                            if let Some(mock_define) = self.records.remove(id) {
+                                let mock:MockDefine = mock_define.mock_define_info.into();
+                                mock_server.delete(mock)
+                            }
+                        });
+                    } else {
+                        add_notification(ctx, "删除失败，请稍后再试");
+                    }
                 },
                 SyncToServer((id,sync_bool)) => {
                     if sync_bool {
@@ -523,7 +523,10 @@ impl eframe::App for TemplateApp {
                                         Ok(_) => {
                                             add_notification(ctx, "添加成功！");
                                         },
-                                        Err(e) => {add_notification(ctx, e.as_str())},
+                                        Err(e) => {
+                                            add_notification(ctx, e.as_str());
+                                            self.records_list.disable_item(id);
+                                        },
                                     }
                                 }
                             } else {
@@ -559,18 +562,8 @@ impl eframe::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             match self.apptab {
                 AppTab::Mock => {
-                    ui.add(Label::new(
-                        egui::RichText::new("模拟服务器")
-                            .color(egui::Color32::RED)
-                            .heading(),
-                    ));
                 }
                 AppTab::Req => {
-                    // ui.add(Label::new(
-                    //     egui::RichText::new("发送请求")
-                    //         .color(egui::Color32::RED)
-                    //         .heading(),
-                    // ));
                     ui.horizontal(|ui|{
                         ui.heading(
                             self.list_selected_str
@@ -579,7 +572,6 @@ impl eframe::App for TemplateApp {
                                 .as_str(),
                         );
                     });
-                    // ui.separator();
                     if let Some(net_ui) = self.records.get_mut(&self.list_selected) {
                         net_ui.ui(ui);
                     } else {
@@ -587,13 +579,7 @@ impl eframe::App for TemplateApp {
                         net_ui.ui(ui);
                         self.records.insert(self.list_selected.to_owned(), net_ui);
                     }
-                } // AppTab::Test => {
-                  //     ui.add(Label::new(
-                  //         egui::RichText::new("压力测试")
-                  //             .color(egui::Color32::RED)
-                  //             .heading(),
-                  //     ));
-                  // }
+                } 
             }
         });
 
@@ -748,6 +734,7 @@ fn load_app(file:PathBuf,app:&mut TemplateApp) -> bool {
         app.list_selected_str = new_app.list_selected_str;
         app.records = new_app.records;
         app.records_list = new_app.records_list;
+        app.records_list.list_all_active_ids().into_iter().for_each(|id|app.records_list.disable_item(id));
         true 
     } else {
         false

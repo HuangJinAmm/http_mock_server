@@ -100,16 +100,28 @@ impl MockServer {
         }
     }
 
+
     pub fn add(&mut self, mock: MockDefine) -> Result<(), String> {
         let mut dispath = self.handler_dispatch.write().unwrap();
         let mut server = self.handlers.write().unwrap();
         let id = mock.id;
-
         if let Some(template) = mock.resp.body.clone() {
             let temp_str = String::from_utf8(template).unwrap();
             if let Ok(mut lock) = TEMP_ENV.write() {
                 let env = lock.borrow_mut();
                 let mut source = env.source().unwrap().clone();
+
+                //添加header的值到模板
+                if let Some(headers) = mock.resp.headers.as_ref() {
+                    for (key,val) in headers {
+                        if val.contains("{{") && val.contains("}}") {
+                            let header_key = format!("{}_header_{}", id, key);
+                            source.add_template(header_key, val).map_err(|e| e.to_string())?;
+                        }
+                    }
+                }
+
+                //添加body到模板
                 let body_temp_key = id.to_string() + "_body";
                 let _add_result = source.add_template(body_temp_key.as_str(), temp_str).map_err(|e| e.to_string())?;
                 env.set_source(source);
