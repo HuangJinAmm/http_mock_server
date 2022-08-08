@@ -1,5 +1,5 @@
 use std::{collections::HashMap, time::Duration};
-use egui::Ui;
+use egui::{Ui, Key, Vec2};
 use httpmock_server::common::{mock::MockDefine, data::{HttpMockRequest, MockServerHttpResponse}};
 use crate::app::Method;
 
@@ -7,6 +7,8 @@ use super::highlight::{CodeTheme, highlight};
 
 #[derive(Debug,Default, Clone, serde::Deserialize, serde::Serialize)]
 pub struct MockPathUi {
+    is_edit: bool,
+    pub remark: String,
     path: String,
     method: Method,
     head:SelectKeyValueInputs,
@@ -14,8 +16,15 @@ pub struct MockPathUi {
     returns: MockReturns,
 }
 
+// impl Default for MockPathUi {
+//     fn default() -> Self {
+//         Self { is_edit: Default::default(), remark: "请添加注释".to_owned(), path: Default::default(), method: Default::default(), head: Default::default(), body: Default::default(), returns: Default::default() }
+//     }
+// }
+
 impl MockPathUi {
     pub fn ui(&mut self, ui: &mut Ui) {
+        editable_label(ui, &mut self.is_edit, &mut self.remark);
         ui.columns(2, |cols|{
             self.req_set_ui(&mut cols[0]);
             self.returns.ui(&mut cols[1]);
@@ -106,16 +115,12 @@ impl MockReturns {
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct MockDefineInfo {
-    is_edit: bool,
-    remark: String,
     pub mock_define_info: MockPathUi,
 }
 
 impl MockDefineInfo {
     pub fn ui(&mut self, ui: &mut Ui) {
-        // ui.group(|ui| {
-            self.mock_define_info.ui(ui);
-        // });
+        self.mock_define_info.ui(ui);
     }
 }
 
@@ -339,7 +344,36 @@ impl Into<MockDefine> for MockPathUi {
             }
         });
         resp.headers = Some(resp_headers);
+        let remark = self.remark;
+        MockDefine { id,remark, req, resp,relay_url}
+    }
+}
 
-        MockDefine { id, req, resp,relay_url}
+pub fn editable_label(ui: &mut egui::Ui, is_edit: &mut bool, value: &mut String) {
+    if *is_edit {
+        
+        let mut text_edit_size = ui.available_size();
+        text_edit_size.y = 40.;
+        let rsp = ui.add_sized(
+            text_edit_size,
+            // egui::TextEdit::multiline(&mut code)
+            egui::text_edit::TextEdit::multiline(value)
+                .font(egui::TextStyle::Monospace) // for cursor height
+        );
+        // let rsp = ui.text_edit_multiline(value);
+        if rsp.lost_focus() {
+            *is_edit = false;
+        }
+    } else {
+        ui.horizontal(|ui| {
+            let resp = ui.label("备注:".to_string()+value.clone().as_str());
+            let rect = resp.rect.expand2(Vec2::new(40., 10.));
+            if ui.rect_contains_pointer(rect) {
+                let rsp = ui.button("编辑");
+                if rsp.clicked() {
+                    *is_edit = !*is_edit;
+                }
+            }
+        });
     }
 }

@@ -1,23 +1,27 @@
 #![warn(non_snake_case)]
+use std::any::Any;
 use std::collections::BTreeMap;
+use std::fs::{self, DirEntry};
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver};
 
 use chrono::Local;
-use egui::{FontData, FontDefinitions, Id, Label};
+use egui::{FontData, FontDefinitions, Id, Label, Layout};
 
 use httpmock_server::common::MOCK_SERVER;
 use httpmock_server::common::mock::MockDefine;
 use serde::{Deserialize, Serialize};
 
+use crate::PORT;
 use crate::component::context_list::Action::Selected;
 use crate::component::context_list::Action::Delete;
 use crate::component::context_list::Action::Keep;
 use crate::component::context_list::Action::SyncToServer;
 use crate::component::context_list::ContextTree;
 use crate::component::mock_path_ui::MockDefineInfo;
+use crate::history_db::{add_new_version_mockinfo, get_history_list, get_mock};
 
 pub const ADD_ID_KEY: &str = "Http_mocker_recodes";
 const APP_KEY: &str = "Http_mock_ui_server_xxx";
@@ -112,7 +116,9 @@ pub struct TemplateApp {
     list_selected: u64,
     list_selected_str: Option<String>,
     records: BTreeMap<u64,MockDefineInfo>,
-
+    #[serde(skip)]
+    // history:Vec<PathBuf>,
+    history:Vec<(String,u32)>,
     #[serde(skip)]
     add_reciever: Option<Receiver<(u64, u64)>>, // current: Option<ApiRecordDefinition>,
                                                 // notifications:Vec<(u64, String)>,
@@ -128,6 +134,7 @@ impl Default for TemplateApp {
         Self {
             // server_path: "127.0.0.1:3000".to_string(),
             // is_server_path_edit:false,
+            history:Vec::new(),
             add_reciever: None,
             is_exiting: false,
             can_exit: false,
@@ -176,8 +183,7 @@ impl TemplateApp {
                 if let Some(response) = egui::Window::new("通知")
                     .id(egui::Id::new(offset as u32))
                     .anchor(egui::Align2::RIGHT_TOP, (0., offset))
-                    .default_size([200., 80.])
-                    .fixed_size([200., 80.])
+                    .min_width(400.)
                     .collapsible(false)
                     .resizable(false)
                     .show(ctx, |ui| {
@@ -439,6 +445,7 @@ impl eframe::App for TemplateApp {
 
                         }
                     }
+
                     // if ui.button("清除所有记录").clicked() {
                     //     self.is_pop=true;
                     // }
@@ -472,6 +479,15 @@ impl eframe::App for TemplateApp {
                 // ui.add(toggle(is_login));
                 // ui.toggle_value(is_login, "历史记录");
                 // ui.selectable_value(apptab, AppTab::Test, "测试");
+                ui.with_layout(Layout::right_to_left(), |ui| {
+                    if ui.selectable_label(self.is_exiting, "历史记录").clicked() {
+                        self.is_exiting = !self.is_exiting;
+                        if self.is_exiting {
+                            // self.history = list_backjson(".", "app_mock");
+                            self.history = get_history_list(self.list_selected);
+                        }
+                    }
+                });
             });
         });
 
@@ -521,6 +537,7 @@ impl eframe::App for TemplateApp {
                                 } else {
                                     match mock_server.add(mock) {
                                         Ok(_) => {
+                                            add_new_version_mockinfo(id, &mock_def.mock_define_info);
                                             add_notification(ctx, "添加成功！");
                                         },
                                         Err(e) => {
@@ -611,11 +628,20 @@ impl eframe::App for TemplateApp {
         //     });
         // }
 
-        // if *is_login {
-        // egui::SidePanel::right("right_panel").show(ctx, |ui| {
-        //     ui.label("Windows can be moved by dragging them.");
-        // });
-        // }
+        if self.is_exiting {
+            egui::SidePanel::right("right_panel").resizable(false).show(ctx, |ui| {
+                ui.label("历史记录");
+                for (ver_name,ver) in self.history.clone() {
+                    ui.label(ver.to_string());
+                    if ui.button(ver_name).clicked() {
+                        if let Some(mock) = get_mock(self.list_selected, ver) {
+                            let mut recode = self.records.get_mut(&self.list_selected).unwrap();
+                            recode.mock_define_info = mock;
+                        }
+                    }
+                }
+            });
+        }
 
         // if !*is_login {
         //     egui::Window::new("登录")
@@ -691,25 +717,6 @@ impl eframe::App for TemplateApp {
 // }
 
 
-// pub fn editable_label(ui: &mut egui::Ui, is_edit: &mut bool, value: &mut String) {
-//     if *is_edit {
-//         let rsp = ui.text_edit_singleline(value);
-//         if rsp.lost_focus() || ui.input().key_pressed(Key::Enter) {
-//             *is_edit = false;
-//         }
-//     } else {
-//         ui.horizontal(|ui| {
-//             let resp = ui.hyperlink("http://".to_string()+value.clone().as_str());
-//             let rect = resp.rect.expand2(Vec2::new(20., 10.));
-//             if ui.rect_contains_pointer(rect) {
-//                 let rsp = ui.button("编辑");
-//                 if rsp.clicked() {
-//                     *is_edit = !*is_edit;
-//                 }
-//             }
-//         });
-//     }
-// }
 
 fn backup_app(app:&TemplateApp,file_name:&str) -> Result<(),String> {
     let app_json = std::fs::File::open(file_name)
@@ -722,8 +729,8 @@ fn backup_app(app:&TemplateApp,file_name:&str) -> Result<(),String> {
 
 fn get_backup_name(app_name:&str) -> String {
     let local = Local::now();
-    let fmt_data = local.format("%Y%m%d-%H%M%S");
-    format!("{}-{}.json",app_name,fmt_data.to_string())
+    let fmt_data = local.format("%Y%m%d");
+    format!("{}-{}-{}.json",app_name,PORT,fmt_data.to_string())
 }
 
 fn load_app(file:PathBuf,app:&mut TemplateApp) -> bool {
@@ -741,6 +748,31 @@ fn load_app(file:PathBuf,app:&mut TemplateApp) -> bool {
     }
 }
 
+fn list_backjson(path:&str,app_name:&str) -> Vec<PathBuf> {
+    let entries = fs::read_dir(path).unwrap();
+    let name_p = format!("{}-{}", app_name,PORT);
+    let mut back_json_files:Vec<DirEntry> = entries.filter(
+        |ent| 
+            ent.as_ref().ok()
+                .map(|en| en.path())
+                .map(|path| {
+                    path.exists()
+                    && path.extension().map(|ext|ext == "json").unwrap_or(false)
+                    && path.file_name().map(
+                                                |name|name.to_str()
+                                                                    .map(
+                                                                            |n|n.starts_with(name_p.as_str())
+                                                                        ).unwrap_or(false)
+                                                                ).unwrap_or(false)
+                }).unwrap_or(false)
+    )
+    .map(|ent|ent.unwrap())
+    .collect();
+    back_json_files.sort_by(|e1,e2|{
+        e1.metadata().unwrap().modified().unwrap().cmp(&e2.metadata().unwrap().modified().unwrap())
+    });
+    dbg!(back_json_files.into_iter().map(|ent|ent.path()).collect())
+}
 // fn find_newest_backjson(path:&str) -> Option<PathBuf> {
 //     let entries = fs::read_dir(path).unwrap();
 //     entries.filter(
@@ -755,3 +787,13 @@ fn load_app(file:PathBuf,app:&mut TemplateApp) -> bool {
 //         e1.metadata().unwrap().modified().unwrap().cmp(&e2.metadata().unwrap().modified().unwrap())
 //     }).map(|ent|ent.path())
 // }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_list_back() {
+        list_backjson(".", "app_mock");
+    }
+}

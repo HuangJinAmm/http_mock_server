@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MockDefine {
+    pub remark:String,
     pub id: u64,
     pub req: HttpMockRequest,
     pub resp: MockServerHttpResponse,

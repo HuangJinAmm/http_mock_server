@@ -217,14 +217,17 @@ fn mock_define_ui(ui: &mut Ui, mock_define: &MockDefine) {
 }
 
 fn mock_info_ui(ui: &mut Ui, mock_define: &MockDefine) {
+    let remark = RichText::new(mock_define.remark.as_str()).monospace().strong();;
+    ui.label(remark);
     ui.columns(3, |ui| {
-        mock_req_ui(&mut ui[0], &mock_define.req,format!("{}-{}",mock_define.id, "req").as_str());
+        ui[0].label("请求条件：");
+        ui[0].group(|ui| mock_req_ui(ui, &mock_define.req,format!("{}-{}",mock_define.id, "req").as_str()));
+        ui[1].label("响应数据：");
         if let Some(url) = &mock_define.relay_url {
             ui[1].label("转发到：");
             ui[1].label(RichText::new(url).underline().color(egui::Color32::GREEN));
-        } else {
-            mock_resp_ui(&mut ui[1], &mock_define.resp,format!("{}-{}",mock_define.id, "resp").as_str());
-        }
+        } 
+        ui[1].group(|ui| mock_resp_ui(ui, &mock_define.resp,format!("{}-{}",mock_define.id, "resp").as_str()));
     });
 }
 fn header_vec_ui(ui: &mut Ui, map: &Vec<(String, String)>,id:&str) {

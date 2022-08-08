@@ -10,6 +10,7 @@ mod component;
 mod template;
 pub mod aes_tool;
 use app::TemplateApp;
+mod history_db;
 
 const PORT:&str = dotenv_codegen::dotenv!("PORT");
 

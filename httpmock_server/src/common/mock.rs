@@ -5,6 +5,7 @@ use super::data::{HttpMockRequest, MockServerHttpResponse};
 #[derive(Clone,Debug,Deserialize,Serialize)]
 pub struct MockDefine {
     pub id: u64,
+    pub remark:String,
     pub req: HttpMockRequest,
     pub resp: MockServerHttpResponse,
     pub relay_url: Option<String>,

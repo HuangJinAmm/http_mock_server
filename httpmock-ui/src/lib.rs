@@ -6,8 +6,11 @@ extern crate lazy_static;
 mod app;
 mod component;
 mod template;
+mod history_db;
 pub mod aes_tool;
 pub use app::TemplateApp;
+
+pub const PORT:&str = dotenv_codegen::dotenv!("PORT");
 
 // lazy_static!{
 //     static ref RT:Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().worker_threads(4).build().unwrap();

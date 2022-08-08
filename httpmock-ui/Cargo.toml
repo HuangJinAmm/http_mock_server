@@ -32,6 +32,7 @@ uuid = {version = "1.1.2", features = [ "v4","fast-rng","macro-diagnostics"]}
 rand = "0.8.5"
 rfd = "0.9.1"
 base64 = "0.13"
+sled = "0.34.7"
 log = "0.4"
 httpmock_server = {path = "../httpmock_server"}
 minijinja = {version="0.17.0",features=["source"]}
