@@ -1,6 +1,6 @@
 pub mod context_list;
 pub mod highlight;
-pub mod pop_windows;
+// pub mod pop_windows;
 // pub mod toggle;
 pub mod template_tools;
 pub mod mock_path_ui;

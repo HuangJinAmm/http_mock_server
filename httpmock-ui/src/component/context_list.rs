@@ -136,12 +136,12 @@ impl ContextTree {
                 //         .color(egui::Color32::RED),
                 // );
                 if self.is_sync {
-                    if ui.button("🚷").on_hover_text("从服务器删除此条模拟规则，立即生效").clicked() {
+                    if ui.button("☑").on_hover_text("从服务器删除此条模拟规则，立即生效").clicked() {
                         self.is_sync = !self.is_sync;
                         return Action::SyncToServer((self.id,self.is_sync));
                     } 
                 } else {
-                    if ui.button("🚶").on_hover_text("更新内容发往服务器，立即生效").clicked() {
+                    if ui.button("☐").on_hover_text("更新内容发往服务器，立即生效").clicked() {
                         self.is_sync = !self.is_sync;
                         return Action::SyncToServer((self.id,self.is_sync));
                     }
@@ -200,12 +200,12 @@ impl ContextTree {
                     // );
                     // ui.label("📓");
                     if self.is_sync {
-                        if ui.button("🚷").on_hover_text("从服务器删除此条模拟规则，立即生效").clicked() {
+                        if ui.button("☑").on_hover_text("从服务器删除此条模拟规则，立即生效").clicked() {
                             self.is_sync = !self.is_sync;
                             return Action::SyncToServer((self.id,self.is_sync));
                         } 
                     } else {
-                        if ui.button("🚶").on_hover_text("更新内容发往服务器，立即生效").clicked() {
+                        if ui.button("☐").on_hover_text("更新内容发往服务器，立即生效").clicked() {
                             self.is_sync = !self.is_sync;
                             return Action::SyncToServer((self.id,self.is_sync));
                         }
@@ -329,3 +329,4 @@ impl ContextTree {
         // }).collect();
     }
 }
+

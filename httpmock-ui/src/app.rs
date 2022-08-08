@@ -8,7 +8,7 @@ use std::str::FromStr;
 use std::sync::mpsc::{Receiver};
 
 use chrono::Local;
-use egui::{FontData, FontDefinitions, Id, Label, Layout};
+use egui::{FontData, FontDefinitions, Id, Label, Layout, vec2};
 
 use httpmock_server::common::MOCK_SERVER;
 use httpmock_server::common::mock::MockDefine;
@@ -30,7 +30,7 @@ const NOTIFICATION_KEY: &str = "http_mocker_Notice";
 lazy_static! {
     static ref NOTIFICATION_ID: Id = Id::new(NOTIFICATION_KEY);
 }
-const NOTIFICATION_SHOW_TIME: i64 = 5000; //毫秒
+const NOTIFICATION_SHOW_TIME: i64 = 3000; //毫秒
 
 #[warn(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -156,6 +156,15 @@ impl Default for TemplateApp {
     }
 }
 
+// pub(crate) fn add_native_notifaction(notice: &str,title:&str,msg_type:rfd::MessageLevel) {
+//     rfd::MessageDialog::new()
+//         .set_level(msg_type)
+//         .set_buttons(rfd::MessageButtons::Ok)
+//         .set_description(notice)
+//         .set_title(title)
+//         .show();
+// }
+
 pub(crate) fn add_notification(ctx: &egui::Context, notice: &str) {
     let mut egui_data = ctx.data();
     let notice_vec: &mut Vec<(i64, String)> =
@@ -166,7 +175,7 @@ pub(crate) fn add_notification(ctx: &egui::Context, notice: &str) {
 
 impl TemplateApp {
     fn display_notifications(&mut self, ctx: &egui::Context) {
-        let mut offset = 0.;
+        let mut offset = 22.;
         let notice_vec_clone;
         {
             let mut egui_data = ctx.data();
@@ -182,10 +191,10 @@ impl TemplateApp {
             .for_each(|notice| {
                 if let Some(response) = egui::Window::new("通知")
                     .id(egui::Id::new(offset as u32))
-                    .anchor(egui::Align2::RIGHT_TOP, (0., offset))
-                    .min_width(400.)
+                    .default_size(vec2(256.0, 256.0))
                     .collapsible(false)
                     .resizable(false)
+                    .anchor(egui::Align2::RIGHT_TOP, (1.0, offset))
                     .show(ctx, |ui| {
                         ui.label(notice.1.clone());
                     })
@@ -533,12 +542,14 @@ impl eframe::App for TemplateApp {
                                 mock.id = id;
                                 if mock.req.path.is_empty() 
                                     || mock.resp.body.is_none() {
-                                    add_notification(ctx, "添加失败！路径或者响应为空");
+                                    add_notification(ctx, "添加失败！\n路径或者响应为空");
+                                    self.records_list.disable_item(id);
                                 } else {
                                     match mock_server.add(mock) {
                                         Ok(_) => {
                                             add_new_version_mockinfo(id, &mock_def.mock_define_info);
                                             add_notification(ctx, "添加成功！");
+                                            // add_native_notifaction("添加成功","成功",rfd::MessageLevel::Info);
                                         },
                                         Err(e) => {
                                             add_notification(ctx, e.as_str());
@@ -632,13 +643,15 @@ impl eframe::App for TemplateApp {
             egui::SidePanel::right("right_panel").resizable(false).show(ctx, |ui| {
                 ui.label("历史记录");
                 for (ver_name,ver) in self.history.clone() {
-                    ui.label(ver.to_string());
-                    if ui.button(ver_name).clicked() {
-                        if let Some(mock) = get_mock(self.list_selected, ver) {
-                            let mut recode = self.records.get_mut(&self.list_selected).unwrap();
-                            recode.mock_define_info = mock;
+                    ui.horizontal(|ui|{
+                        ui.label(ver.to_string());
+                        if ui.button(ver_name).clicked() {
+                            if let Some(mock) = get_mock(self.list_selected, ver) {
+                                let mut recode = self.records.get_mut(&self.list_selected).unwrap();
+                                recode.mock_define_info = mock;
+                            }
                         }
-                    }
+                    });
                 }
             });
         }
@@ -748,31 +761,31 @@ fn load_app(file:PathBuf,app:&mut TemplateApp) -> bool {
     }
 }
 
-fn list_backjson(path:&str,app_name:&str) -> Vec<PathBuf> {
-    let entries = fs::read_dir(path).unwrap();
-    let name_p = format!("{}-{}", app_name,PORT);
-    let mut back_json_files:Vec<DirEntry> = entries.filter(
-        |ent| 
-            ent.as_ref().ok()
-                .map(|en| en.path())
-                .map(|path| {
-                    path.exists()
-                    && path.extension().map(|ext|ext == "json").unwrap_or(false)
-                    && path.file_name().map(
-                                                |name|name.to_str()
-                                                                    .map(
-                                                                            |n|n.starts_with(name_p.as_str())
-                                                                        ).unwrap_or(false)
-                                                                ).unwrap_or(false)
-                }).unwrap_or(false)
-    )
-    .map(|ent|ent.unwrap())
-    .collect();
-    back_json_files.sort_by(|e1,e2|{
-        e1.metadata().unwrap().modified().unwrap().cmp(&e2.metadata().unwrap().modified().unwrap())
-    });
-    dbg!(back_json_files.into_iter().map(|ent|ent.path()).collect())
-}
+// fn list_backjson(path:&str,app_name:&str) -> Vec<PathBuf> {
+//     let entries = fs::read_dir(path).unwrap();
+//     let name_p = format!("{}-{}", app_name,PORT);
+//     let mut back_json_files:Vec<DirEntry> = entries.filter(
+//         |ent| 
+//             ent.as_ref().ok()
+//                 .map(|en| en.path())
+//                 .map(|path| {
+//                     path.exists()
+//                     && path.extension().map(|ext|ext == "json").unwrap_or(false)
+//                     && path.file_name().map(
+//                                                 |name|name.to_str()
+//                                                                     .map(
+//                                                                             |n|n.starts_with(name_p.as_str())
+//                                                                         ).unwrap_or(false)
+//                                                                 ).unwrap_or(false)
+//                 }).unwrap_or(false)
+//     )
+//     .map(|ent|ent.unwrap())
+//     .collect();
+//     back_json_files.sort_by(|e1,e2|{
+//         e1.metadata().unwrap().modified().unwrap().cmp(&e2.metadata().unwrap().modified().unwrap())
+//     });
+//     dbg!(back_json_files.into_iter().map(|ent|ent.path()).collect())
+// }
 // fn find_newest_backjson(path:&str) -> Option<PathBuf> {
 //     let entries = fs::read_dir(path).unwrap();
 //     entries.filter(
@@ -787,13 +800,3 @@ fn list_backjson(path:&str,app_name:&str) -> Vec<PathBuf> {
 //         e1.metadata().unwrap().modified().unwrap().cmp(&e2.metadata().unwrap().modified().unwrap())
 //     }).map(|ent|ent.path())
 // }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_list_back() {
-        list_backjson(".", "app_mock");
-    }
-}
