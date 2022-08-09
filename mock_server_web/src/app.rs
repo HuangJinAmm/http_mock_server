@@ -66,6 +66,13 @@ impl TemplateApp {
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             let mut app: TemplateApp = eframe::get_value(storage, APP_KEY).unwrap_or_default();
+            if let Some(web_info) = cc.integration_info.web_info.as_ref() {
+                let mut hash = web_info.location.hash.clone();
+                if hash.starts_with('#') {
+                    hash.remove(0);
+                }
+                app.filter = hash;
+            }
             let _promise = app.promise.get_or_insert_with(|| {
                 // Begin download.
                 // We download the image using `ehttp`, a library that works both in WASM and on native.
@@ -84,6 +91,13 @@ impl TemplateApp {
             return app;
         }
         let mut app = TemplateApp::default();
+        if let Some(web_info) = cc.integration_info.web_info.as_ref() {
+            let mut hash = web_info.location.hash.clone();
+            if hash.starts_with('#') {
+                hash.remove(0);
+            }
+            app.filter = hash;
+        }
         let _promise = app.promise.get_or_insert_with(|| {
             // Begin download.
             // We download the image using `ehttp`, a library that works both in WASM and on native.
