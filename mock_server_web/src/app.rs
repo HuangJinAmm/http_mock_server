@@ -225,7 +225,7 @@ fn mock_define_ui(ui: &mut Ui, mock_define: &MockDefine) {
 }
 
 fn mock_info_ui(ui: &mut Ui, mock_define: &MockDefine) {
-    let remark = RichText::new(mock_define.remark.as_str()).monospace().strong();;
+    let remark = RichText::new(mock_define.remark.as_str()).background_color(Color32::LIGHT_GREEN);
     ui.label(remark);
     ui.columns(3, |ui| {
         ui[0].label("请求条件：");
