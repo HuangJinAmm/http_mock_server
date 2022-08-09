@@ -372,15 +372,9 @@ impl eframe::App for TemplateApp {
             let dropped_files = ctx.input().raw.dropped_files.clone();
             for file in dropped_files {
                 if let Some(file_p) = file.path {
-                    if file_p.ends_with("json") {
-                        if let Some(bytes) = file.bytes {
-                            let slice_bytes = bytes.as_ref();
-                            let app: TemplateApp = serde_json::from_slice(slice_bytes).unwrap();
-                            self.list_selected = app.list_selected;
-                            self.list_selected_str = app.list_selected_str;
-                            self.records = app.records;
-                            self.records_list = app.records_list;
-                            self.records_list.list_all_active_ids().into_iter().for_each(|id|self.records_list.disable_item(id));
+                    if let Some(ext) = file_p.extension() {
+                        if ext == "json" {
+                            load_app(file_p, self);
                         }
                     }
                 }
