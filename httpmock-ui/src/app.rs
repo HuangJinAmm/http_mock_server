@@ -642,17 +642,19 @@ impl eframe::App for TemplateApp {
         if self.is_exiting {
             egui::SidePanel::right("right_panel").resizable(false).show(ctx, |ui| {
                 ui.label("历史记录");
-                for (ver_name,ver) in self.history.clone() {
-                    ui.horizontal(|ui|{
-                        ui.label(ver.to_string());
-                        if ui.button(ver_name).clicked() {
-                            if let Some(mock) = get_mock(self.list_selected, ver) {
-                                let mut recode = self.records.get_mut(&self.list_selected).unwrap();
-                                recode.mock_define_info = mock;
+                egui::ScrollArea::vertical().show(ui, |ui|{
+                    for (ver_name,ver) in self.history.clone() {
+                        ui.horizontal(|ui|{
+                            ui.label(ver.to_string());
+                            if ui.button(ver_name).clicked() {
+                                if let Some(mock) = get_mock(self.list_selected, ver) {
+                                    let mut recode = self.records.get_mut(&self.list_selected).unwrap();
+                                    recode.mock_define_info = mock;
+                                }
                             }
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             });
         }
 
