@@ -15,7 +15,7 @@ pub fn code_view_ui(ui: &mut egui::Ui, mut code: &str, language: &str) {
     ui.add(
         // egui::TextEdit::multiline(&mut code)
         egui::text_edit::TextEdit::multiline(&mut code)
-            .font(egui::TextStyle::Monospace) // for cursor height
+            .font(egui::TextStyle::Heading) // for cursor height
             // .code_editor()
             // .desired_rows(1)
             // .lock_focus(true)
@@ -110,7 +110,7 @@ impl CodeTheme {
 
 impl CodeTheme {
     pub fn dark() -> Self {
-        let font_id = egui::FontId::monospace(12.0);
+        let font_id = egui::FontId::monospace(20.0);
         use egui::{Color32, TextFormat};
         Self {
             dark_mode: true,
@@ -126,7 +126,7 @@ impl CodeTheme {
     }
 
     pub fn light() -> Self {
-        let font_id = egui::FontId::monospace(12.0);
+        let font_id = egui::FontId::monospace(20.0);
         use egui::{Color32, TextFormat};
         Self {
             dark_mode: false,

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use egui::{FontData, FontDefinitions, Id, RichText, Ui, Color32};
+use egui::{FontData, FontDefinitions, Id, RichText, Ui, Color32, TextStyle, style};
 use poll_promise::Promise;
 
 use crate::data::{HttpMockRequest, MockDefine, MockServerHttpResponse};
@@ -52,8 +53,15 @@ impl TemplateApp {
             .entry(egui::FontFamily::Monospace)
             .or_default()
             .push("my_font".to_owned());
-
+        
         cc.egui_ctx.set_fonts(fonts);
+        
+        let mut style = cc.egui_ctx.style().as_ref().clone();
+
+        style.override_text_style = Some(TextStyle::Heading);
+
+        cc.egui_ctx.set_style(Arc::new(style));
+
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
