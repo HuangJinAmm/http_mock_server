@@ -1,4 +1,4 @@
 /target
 httpmock-ui/app_mock*.json
 *.drawio
-/history
+/*/history

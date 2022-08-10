@@ -1,6 +1,8 @@
 pub mod common;
 mod error;
 mod matchers;
+mod template;
+mod aes_tool;
 
 use std::{
     borrow::{BorrowMut},

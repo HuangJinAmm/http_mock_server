@@ -34,9 +34,8 @@ async-trait = "0.1.56"
 fake = {version="2.5.0", features=["chrono","http","uuid"] }
 uuid = {version = "1.1.2", features = [ "v4","fast-rng","macro-diagnostics"]}
 rand = "0.8.5"
-minijinja = {version="0.17.0",features=["source"]}
-# tera = "1.16"
-
+minijinja = {version="0.17.0",features=["source","builtins"]}
+rust-crypto = "0.2.36"
 
 [[bin]]
 name = "httpmock_server"

@@ -4,11 +4,8 @@
 #[macro_use]
 extern crate lazy_static;
 
-// mod json_sy;
 mod app;
 mod component;
-mod template;
-pub mod aes_tool;
 use app::TemplateApp;
 mod history_db;
 

@@ -1,5 +1,5 @@
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use chrono::{Local, DateTime, Utc, Duration, TimeZone};
 use minijinja::{Environment, Source};
@@ -18,8 +18,9 @@ use crate::aes_tool::{aes_dec_ecb_string, aes_enc_ecb_string, aes_dec_cbc_string
 // const ASCII: &str = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@";
 const ASCII_HEX: &str = "0123456789ABCDEF";
 const ASCII_NUM: &str = "0123456789";
+const DEFAULT_FMT: &str = "%Y-%m-%dT%H:%M:%S";
 lazy_static! {
-    static ref TEMP_ENV: Arc<Mutex<Environment<'static>>> = {
+    pub static ref TEMP_ENV: Arc<RwLock<Environment<'static>>> = {
         let mut t_env = Environment::new();
         t_env.add_function("NAME_ZH", fake_name_zh);
         t_env.add_function("NAME_EN", fake_name_en);
@@ -59,7 +60,7 @@ lazy_static! {
         t_env.add_filter("AesCtrEnc", aes_enc_ctr);
         let source = Source::new();
         t_env.set_source(source);
-        Arc::new(Mutex::new(t_env))
+        Arc::new(RwLock::new(t_env))
     };
 }
 
@@ -218,11 +219,23 @@ fn fake_base64_de(_state: &State<'_, '_>,fmt:String) -> Result<String, Error> {
     }
     Ok(fmt)
 }
-fn fake_now(_state: &State<'_, '_>,fmt:String) -> Result<String, Error> {
+
+fn fake_now(_state: &State<'_, '_>,fmt:Option<String>) -> Result<String, Error> {
+    let fmt = match fmt {
+        Some(f) => f,
+        None => DEFAULT_FMT.to_owned(),
+    };
     let local = Local::now();
     let fmt_data = local.format(fmt.as_str());
     Ok(fmt_data.to_string())
 }
+
+
+// fn fake_date_add(_state: &State<'_, '_>,fmt:Option<String>) -> Result<String, Error> {
+//     let local = Local::now();
+//     let fmt_data = local.format(fmt.as_str());
+//     Ok(fmt_data.to_string())
+// }
 
 fn fake_datetime(_state: &State<'_, '_>,fmt:String) -> Result<String, Error> {
     let local =Utc::now();
