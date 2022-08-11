@@ -8,6 +8,7 @@ mod app;
 mod component;
 use app::TemplateApp;
 mod history_db;
+pub mod esay_md;
 
 const PORT:&str = dotenv_codegen::dotenv!("PORT");
 

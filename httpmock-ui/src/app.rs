@@ -21,6 +21,7 @@ use crate::component::context_list::Action::Keep;
 use crate::component::context_list::Action::SyncToServer;
 use crate::component::context_list::ContextTree;
 use crate::component::mock_path_ui::MockDefineInfo;
+use crate::esay_md::EasyMarkEditor;
 use crate::history_db::{add_new_version_mockinfo, get_history_list, get_mock};
 
 pub const ADD_ID_KEY: &str = "Http_mocker_recodes";
@@ -582,25 +583,33 @@ impl eframe::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.horizontal(|ui|{
+                ui.heading(
+                    self.list_selected_str
+                        .clone()
+                        .unwrap_or_else(||"未命名".into())
+                        .as_str(),
+                );
+                ui.selectable_value(&mut self.apptab,AppTab::Mock, "文档说明");
+                ui.selectable_value(&mut self.apptab,AppTab::Req, "模拟设置");
+            });
+            let net_ui = if let Some(net) = self.records.get_mut(&self.list_selected) {
+                net
+            } else {
+                let net_ui = MockDefineInfo::default();
+                self.records.insert(self.list_selected.to_owned(), net_ui);
+                self.records.get_mut(&self.list_selected).unwrap()
+            };
             match self.apptab {
                 AppTab::Mock => {
+                    if ui.button("预览").clicked(){
+                        net_ui.mock_define_info.is_edit = !net_ui.mock_define_info.is_edit;
+                    }
+                    let mut md_editor = EasyMarkEditor::default();
+                    md_editor.ui(ui, &mut net_ui.mock_define_info.remark, &mut net_ui.mock_define_info.is_edit);
                 }
                 AppTab::Req => {
-                    ui.horizontal(|ui|{
-                        ui.heading(
-                            self.list_selected_str
-                                .clone()
-                                .unwrap_or_else(||"未命名".into())
-                                .as_str(),
-                        );
-                    });
-                    if let Some(net_ui) = self.records.get_mut(&self.list_selected) {
-                        net_ui.ui(ui);
-                    } else {
-                        let mut net_ui = MockDefineInfo::default();
-                        net_ui.ui(ui);
-                        self.records.insert(self.list_selected.to_owned(), net_ui);
-                    }
+                    net_ui.ui(ui);
                 } 
             }
         });

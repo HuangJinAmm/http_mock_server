@@ -6,6 +6,7 @@ extern crate lazy_static;
 mod app;
 mod component;
 mod history_db;
+pub mod esay_md;
 pub use app::TemplateApp;
 
 pub const PORT:&str = dotenv_codegen::dotenv!("PORT");

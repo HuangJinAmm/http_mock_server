@@ -1,13 +1,13 @@
 use std::{collections::HashMap, time::Duration};
 use egui::{Ui, Key, Vec2};
 use httpmock_server::common::{mock::MockDefine, data::{HttpMockRequest, MockServerHttpResponse}};
-use crate::app::Method;
+use crate::{app::Method, esay_md::EasyMarkEditor};
 
 use super::highlight::{CodeTheme, highlight};
 
 #[derive(Debug,Default, Clone, serde::Deserialize, serde::Serialize)]
 pub struct MockPathUi {
-    is_edit: bool,
+    pub is_edit: bool,
     pub remark: String,
     path: String,
     method: Method,
@@ -24,7 +24,8 @@ pub struct MockPathUi {
 
 impl MockPathUi {
     pub fn ui(&mut self, ui: &mut Ui) {
-        editable_label(ui, &mut self.is_edit, &mut self.remark);
+
+        // editable_label(ui, &mut self.is_edit, &mut self.remark);
         ui.columns(2, |cols|{
             self.req_set_ui(&mut cols[0]);
             self.returns.ui(&mut cols[1]);
@@ -348,6 +349,7 @@ impl Into<MockDefine> for MockPathUi {
         MockDefine { id,remark, req, resp,relay_url}
     }
 }
+
 
 pub fn editable_label(ui: &mut egui::Ui, is_edit: &mut bool, value: &mut String) {
     if *is_edit {

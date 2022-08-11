@@ -4,6 +4,7 @@ mod app;
 mod data;
 mod highlight;
 pub use app::TemplateApp;
+pub mod esay_md;
 
 // ----------------------------------------------------------------------------
 // When compiling for web:

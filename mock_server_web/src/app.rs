@@ -5,13 +5,14 @@ use std::sync::Arc;
 use egui::{FontData, FontDefinitions, Id, RichText, Ui, Color32, TextStyle, style};
 use egui_extras::{TableBuilder, Size};
 use poll_promise::Promise;
+use serde::__private::de::IdentifierDeserializer;
 
 use crate::data::{HttpMockRequest, MockDefine, MockServerHttpResponse};
 use crate::highlight::code_view_ui;
 
 const APP_KEY: &str = "mock_server_web_ui_xxx";
-const SERVER_URL:&str = "../_mock_list";
-// const SERVER_URL:&str = "http://localhost:13001/_mock_list";
+// const SERVER_URL:&str = "../_mock_list";
+const SERVER_URL:&str = "http://localhost:13001/_mock_list";
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -70,13 +71,6 @@ impl TemplateApp {
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             let mut app: TemplateApp = eframe::get_value(storage, APP_KEY).unwrap_or_default();
-            if let Some(web_info) = cc.integration_info.web_info.as_ref() {
-                let mut hash = web_info.location.hash.clone();
-                if hash.starts_with('#') {
-                    hash.remove(0);
-                }
-                app.filter = hash;
-            }
             let _promise = app.promise.get_or_insert_with(|| {
                 // Begin download.
                 // We download the image using `ehttp`, a library that works both in WASM and on native.
@@ -95,13 +89,6 @@ impl TemplateApp {
             return app;
         }
         let mut app = TemplateApp::default();
-        if let Some(web_info) = cc.integration_info.web_info.as_ref() {
-            let mut hash = web_info.location.hash.clone();
-            if hash.starts_with('#') {
-                hash.remove(0);
-            }
-            app.filter = hash;
-        }
         let _promise = app.promise.get_or_insert_with(|| {
             // Begin download.
             // We download the image using `ehttp`, a library that works both in WASM and on native.
@@ -128,7 +115,15 @@ impl eframe::App for TemplateApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        if let Some(web_info) = frame.info().web_info.as_ref() {
+            let mut hash = web_info.location.hash.clone();
+            if hash.starts_with('#') {
+                hash.remove(0);
+            }
+            self.filter = hash;
+        }
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 egui::widgets::global_dark_light_mode_switch(ui);
@@ -168,7 +163,15 @@ impl eframe::App for TemplateApp {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
                     ui.label("过滤：");
-                    ui.text_edit_singleline(&mut self.filter);
+                    let rsp = ui.text_edit_singleline(&mut self.filter);
+
+                    if rsp.changed() {
+                        let mut info = frame.info();
+                        frame.set_window_title(&self.filter);
+                        let mut web = info.web_info.unwrap();
+                        web.location.hash = format!("#{}", &self.filter);
+                        info.web_info = Some(web);
+                    }
                 });
                 
             egui::ScrollArea::both()
@@ -243,8 +246,10 @@ fn mock_define_ui(ui: &mut Ui, mock_define: &MockDefine) {
 }
 
 fn mock_info_ui(ui: &mut Ui, mock_define: &MockDefine) {
-    let remark = RichText::new(mock_define.remark.as_str()).background_color(Color32::LIGHT_GREEN);
-    ui.label(remark);
+
+    crate::esay_md::easy_mark(ui, &mock_define.remark);
+    // let remark = RichText::new(mock_define.remark.as_str()).background_color(Color32::LIGHT_GREEN);
+    // ui.label(remark);
     ui.columns(2, |ui| {
         ui[0].group(|ui| mock_req_ui(ui, &mock_define.req,format!("{}-{}",mock_define.id, "req").as_str()));
         if let Some(url) = &mock_define.relay_url {
