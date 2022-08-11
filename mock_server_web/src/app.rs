@@ -246,9 +246,7 @@ fn mock_info_ui(ui: &mut Ui, mock_define: &MockDefine) {
     let remark = RichText::new(mock_define.remark.as_str()).background_color(Color32::LIGHT_GREEN);
     ui.label(remark);
     ui.columns(2, |ui| {
-        ui[0].label("请求条件：");
         ui[0].group(|ui| mock_req_ui(ui, &mock_define.req,format!("{}-{}",mock_define.id, "req").as_str()));
-        ui[1].label("响应数据：");
         if let Some(url) = &mock_define.relay_url {
             ui[1].label("转发到：");
             ui[1].label(RichText::new(url).underline().color(egui::Color32::GREEN));
