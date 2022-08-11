@@ -1,13 +1,17 @@
 use std::collections::HashMap;
+use std::ops::Index;
 use std::sync::Arc;
 
 use egui::{FontData, FontDefinitions, Id, RichText, Ui, Color32, TextStyle, style};
+use egui_extras::{TableBuilder, Size};
 use poll_promise::Promise;
 
 use crate::data::{HttpMockRequest, MockDefine, MockServerHttpResponse};
 use crate::highlight::code_view_ui;
 
 const APP_KEY: &str = "mock_server_web_ui_xxx";
+// const SERVER_URL:&str = "../_mock_list";
+const SERVER_URL:&str = "http://localhost:13001/_mock_list";
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -135,7 +139,7 @@ impl eframe::App for TemplateApp {
                         let (sender, promise) = Promise::new();
                         let request =
                             // ehttp::Request::get(format!("http://{}/_mock_list", "127.0.0.1:3000"));
-                            ehttp::Request::get("../_mock_list");
+                            ehttp::Request::get(SERVER_URL);
                         ehttp::fetch(request, move |response| {
                             let mock_list = response.and_then(parse_response);
                             sender.send(mock_list); // send the results back to the UI thread.
@@ -241,7 +245,7 @@ fn mock_define_ui(ui: &mut Ui, mock_define: &MockDefine) {
 fn mock_info_ui(ui: &mut Ui, mock_define: &MockDefine) {
     let remark = RichText::new(mock_define.remark.as_str()).background_color(Color32::LIGHT_GREEN);
     ui.label(remark);
-    ui.columns(3, |ui| {
+    ui.columns(2, |ui| {
         ui[0].label("请求条件：");
         ui[0].group(|ui| mock_req_ui(ui, &mock_define.req,format!("{}-{}",mock_define.id, "req").as_str()));
         ui[1].label("响应数据：");
@@ -252,47 +256,101 @@ fn mock_info_ui(ui: &mut Ui, mock_define: &MockDefine) {
         ui[1].group(|ui| mock_resp_ui(ui, &mock_define.resp,format!("{}-{}",mock_define.id, "resp").as_str()));
     });
 }
-fn header_vec_ui(ui: &mut Ui, map: &Vec<(String, String)>,id:&str) {
-    ui.group(|ui| {
-        egui::Grid::new(id)
-            .num_columns(2)
-            .min_col_width(80.)
-            .min_row_height(20.)
-            .show(ui, |ui| {
-                for (key, value) in map {
-                    ui.label(key);
-                    ui.label(value);
-                    // ui.add_sized(ui.available_size(), egui::widgets::Label::new(key.clone()));
-                    // ui.add_sized(
-                    //     ui.available_size(),
-                    //     egui::widgets::Label::new(value.clone()),
-                    // );
-                    ui.end_row();
-                }
+// fn header_vec_ui(ui: &mut Ui, map: &Vec<(String, String)>,id:&str) {
+//     egui::Grid::new(id)
+//         .num_columns(2)
+//         .min_col_width(80.)
+//         .min_row_height(20.)
+//         .show(ui, |ui| {
+//             for (key, value) in map {
+//                 ui.label(key);
+//                 ui.label(value);
+//                 // ui.add_sized(ui.available_size(), egui::widgets::Label::new(key.clone()));
+//                 // ui.add_sized(
+//                 //     ui.available_size(),
+//                 //     egui::widgets::Label::new(value.clone()),
+//                 // );
+//                 ui.end_row();
+//             }
+//         });
+// }
+
+fn vec_header_table(ui: &mut Ui, map: &Vec<(String, String)>) {
+        TableBuilder::new(ui)
+            .column(Size::remainder().at_least(100.0))
+            .column(Size::remainder())
+            .resizable(true)
+            .scroll(false)
+            .cell_layout(egui::Layout::left_to_right())
+            // .header(20.0, |mut header| {
+            //     header.col(|ui| {
+            //         ui.heading("KEY");
+            //     });
+            //     header.col(|ui| {
+            //         ui.heading("VALUE");
+            //     });
+            // })
+            .body(|mut body| {
+                
+                body.rows(30.0, map.len(), |i,mut row|{
+                    let (key,value) = map.index(i);
+                    row.col(|ui| {
+                        ui.label(key);
+                    });
+                    row.col(|ui| {
+                        ui.label(value);
+                    });
+                });
             });
-    });
 }
 
-fn hashmap_ui(ui: &mut Ui, map: &HashMap<String, String>,id:&str) {
-    ui.group(|ui| {
-        egui::Grid::new(id)
-            .num_columns(2)
-            .min_col_width(80.)
-            .min_row_height(20.)
-            .show(ui, |ui| {
+fn hashmap_header_table(ui: &mut Ui, map: &HashMap<String, String>) {
+        TableBuilder::new(ui)
+            .column(Size::remainder().at_least(100.0))
+            .column(Size::remainder())
+            .resizable(true)
+            .scroll(false)
+            .cell_layout(egui::Layout::left_to_right())
+            // .header(20.0, |mut header| {
+            //     header.col(|ui| {
+            //         ui.heading("KEY");
+            //     });
+            //     header.col(|ui| {
+            //         ui.heading("VALUE");
+            //     });
+            // })
+            .body(|mut body| {
                 for (key, value) in map {
-                    ui.label(key);
-                    ui.label(value);
-                    // ui.add_sized(ui.available_size(), egui::widgets::Label::new(key.clone()));
-                    // ui.add_sized(
-                    //     ui.available_size(),
-                    //     egui::widgets::Label::new(value.clone()),
-                    // );
-                    ui.end_row();
+                    body.row(30.0, |mut row| {
+                        row.col(|ui| {
+                            ui.label(key);
+                        });
+                        row.col(|ui| {
+                            ui.label(value);
+                        });
+                    });
                 }
             });
-    });
 }
+
+// fn hashmap_ui(ui: &mut Ui, map: &HashMap<String, String>,id:&str) {
+//     egui::Grid::new(id)
+//         .num_columns(2)
+//         .min_col_width(80.)
+//         .min_row_height(20.)
+//         .show(ui, |ui| {
+//             for (key, value) in map {
+//                 ui.label(key);
+//                 ui.label(value);
+//                 // ui.add_sized(ui.available_size(), egui::widgets::Label::new(key.clone()));
+//                 // ui.add_sized(
+//                 //     ui.available_size(),
+//                 //     egui::widgets::Label::new(value.clone()),
+//                 // );
+//                 ui.end_row();
+//             }
+//         });
+// }
 
 fn mock_resp_ui(ui: &mut Ui, resp: &MockServerHttpResponse,id:&str) {
     let MockServerHttpResponse {
@@ -306,6 +364,7 @@ fn mock_resp_ui(ui: &mut Ui, resp: &MockServerHttpResponse,id:&str) {
     let delay = delay.unwrap_or_default();
 
     ui.horizontal(|ui|{
+        ui.label("响应行为：");
         ui.label("响应码");
         ui.label(status.to_string());
         ui.end_row();
@@ -315,12 +374,17 @@ fn mock_resp_ui(ui: &mut Ui, resp: &MockServerHttpResponse,id:&str) {
 
     if let Some(head_vec) = headers {
         if !head_vec.is_empty() {
-
-            header_vec_ui(ui, head_vec,id); 
+            ui.label("响应头：");
+            ui.separator();
+            ui.scope(|ui|{
+                vec_header_table(ui, head_vec); 
+            });
+            ui.separator();
         }
     }
     if let Some(body) = body.clone() {
         if let Ok(body_string) = String::from_utf8(body) {
+            ui.label("响应数据：");
             code_view_ui(ui, &body_string, "json");
         }
     }
@@ -330,11 +394,15 @@ fn mock_resp_ui(ui: &mut Ui, resp: &MockServerHttpResponse,id:&str) {
 fn mock_req_ui(ui: &mut Ui, req: &HttpMockRequest,id:&str) {
     if let Some(header_map) = &req.headers {
         if !header_map.is_empty() {
-            hashmap_ui(ui, header_map,id);
+            ui.label("请求头：");
+            ui.separator();
+            hashmap_header_table(ui, header_map);
+            ui.separator();
         }
     }
     if let Some(body) = req.body.clone() {
         if let Ok(body_string) = String::from_utf8(body) {
+            ui.label("请求数据：");
             code_view_ui(ui, &body_string, "json");
         }
     }
