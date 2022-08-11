@@ -10,8 +10,8 @@ use crate::data::{HttpMockRequest, MockDefine, MockServerHttpResponse};
 use crate::highlight::code_view_ui;
 
 const APP_KEY: &str = "mock_server_web_ui_xxx";
-// const SERVER_URL:&str = "../_mock_list";
-const SERVER_URL:&str = "http://localhost:13001/_mock_list";
+const SERVER_URL:&str = "../_mock_list";
+// const SERVER_URL:&str = "http://localhost:13001/_mock_list";
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
