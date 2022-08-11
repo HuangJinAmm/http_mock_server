@@ -38,9 +38,7 @@ impl MockPathUi {
                 ui.strong("请求条件设置");
                 ui.add_space(5.0);
                 ui.horizontal(|ui|{
-                    ui.label("路径");
-                    ui.text_edit_singleline(&mut self.path);
-                    egui::ComboBox::from_label("请求方法")
+                    egui::ComboBox::from_id_source("requset_method")
                         .selected_text(format!("{:?}", &mut self.method))
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut self.method, Method::GET, "GET");
@@ -51,6 +49,8 @@ impl MockPathUi {
                             ui.selectable_value(&mut self.method, Method::OPTIONS, "OPTIONS");
                             ui.selectable_value(&mut self.method, Method::NONE, "无限制");
                         });
+                    ui.label("路径");
+                    egui::TextEdit::singleline(&mut self.path).desired_width(ui.available_width()).show(ui);
                 });
                 self.head.ui_grid_input(ui, "aaaaaa");
                 super::highlight::code_editor_ui_notool(ui, &mut self.body, "json");

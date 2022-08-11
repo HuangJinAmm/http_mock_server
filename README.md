@@ -2,7 +2,7 @@
 
 本程序是一个模拟接口响应的独立服务器。本程序根据请求动态生成响应数据，并且可以通过ui界面动态调整。若想使用模拟测试库的话，Java语言可以使用[mockserver](https://github.com/mock-server/mockserver)，Rust则可以使用[httpmock](https://github.com/alexliesenfeld/httpmock)
 
-## 开发背景
+## 开发动机
 
 项目开发中有需要用到模拟服务器来模拟接口数据，之前使用过Java的[mockserver](https://github.com/mock-server/mockserver)和[httpmock](https://github.com/alexliesenfeld/httpmock)的独立服务器模式，但是有几个缺点：
 
@@ -14,7 +14,7 @@
 
 - 服务器信息展示界面不清晰。
 
-在github上查了一段时间，并没有发现符合我的需求的。所以决定自己来开发一个。之前打算用Java。但是考虑java没有好用ui库，而且这个工具定位为小工具，java占用内存太高，故就不考虑了。当时考虑用go或rust这两个比较新的语言来开发。这时正好之前有空的时候把rust的指导手册看完了,本人已经达到精通rust的hello world程序水准了。
+![]()在github上查了一段时间，并没有发现符合我的需求。
 
 ## 应用场景
 
@@ -38,4 +38,13 @@
 
 ## 使用介绍
 
-1. 配置页面
+1. 页面介绍
+   - 配置管理界面
+   
+   ![](D:\1-code\http_mock_server\screenshots\httpmock_ui_FM6cbSVfAN.png)
+   
+   - 查看信息界面(web)[http://localhost:13001/_mock_info/]()
+
+
+
+ 

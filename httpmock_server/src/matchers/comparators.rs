@@ -1,4 +1,4 @@
-use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
+// use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
 use regex::Regex;
 use serde_json::Value;
 
@@ -133,54 +133,54 @@ impl ValueComparator<Value, Value> for JSONRegexMatchComparator {
 // ************************************************************************************************
 // JSONExactMatchComparator
 // ************************************************************************************************
-pub struct JSONExactMatchComparator {}
+// pub struct JSONExactMatchComparator {}
 
-impl JSONExactMatchComparator {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+// impl JSONExactMatchComparator {
+//     pub fn new() -> Self {
+//         Self {}
+//     }
+// }
 
-impl ValueComparator<Value, Value> for JSONExactMatchComparator {
-    fn matches(&self, mock_value: &Value, req_value: &Value) -> bool {
-        let config = Config::new(CompareMode::Strict);
-        assert_json_matches_no_panic(req_value, mock_value, config).is_ok()
-    }
+// impl ValueComparator<Value, Value> for JSONExactMatchComparator {
+//     fn matches(&self, mock_value: &Value, req_value: &Value) -> bool {
+//         let config = Config::new(CompareMode::Strict);
+//         assert_json_matches_no_panic(req_value, mock_value, config).is_ok()
+//     }
 
-    fn name(&self) -> &str {
-        "equals"
-    }
+//     fn name(&self) -> &str {
+//         "equals"
+//     }
 
-    fn distance(&self, mock_value: &Option<&Value>, req_value: &Option<&Value>) -> usize {
-        distance_for(mock_value, req_value)
-    }
-}
+//     fn distance(&self, mock_value: &Option<&Value>, req_value: &Option<&Value>) -> usize {
+//         distance_for(mock_value, req_value)
+//     }
+// }
 
-// ************************************************************************************************
-// JSONExactMatchComparator
-// ************************************************************************************************
-pub struct JSONContainsMatchComparator {}
+// // ************************************************************************************************
+// // JSONExactMatchComparator
+// // ************************************************************************************************
+// pub struct JSONContainsMatchComparator {}
 
-impl JSONContainsMatchComparator {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+// impl JSONContainsMatchComparator {
+//     pub fn new() -> Self {
+//         Self {}
+//     }
+// }
 
-impl ValueComparator<Value, Value> for JSONContainsMatchComparator {
-    fn matches(&self, mock_value: &Value, req_value: &Value) -> bool {
-        let config = Config::new(CompareMode::Inclusive);
-        assert_json_matches_no_panic(req_value, mock_value, config).is_ok()
-    }
+// impl ValueComparator<Value, Value> for JSONContainsMatchComparator {
+//     fn matches(&self, mock_value: &Value, req_value: &Value) -> bool {
+//         let config = Config::new(CompareMode::Inclusive);
+//         assert_json_matches_no_panic(req_value, mock_value, config).is_ok()
+//     }
 
-    fn name(&self) -> &str {
-        "contains"
-    }
+//     fn name(&self) -> &str {
+//         "contains"
+//     }
 
-    fn distance(&self, mock_value: &Option<&Value>, req_value: &Option<&Value>) -> usize {
-        distance_for(mock_value, req_value)
-    }
-}
+//     fn distance(&self, mock_value: &Option<&Value>, req_value: &Option<&Value>) -> usize {
+//         distance_for(mock_value, req_value)
+//     }
+// }
 
 // ************************************************************************************************
 // StringExactMatchComparator
@@ -339,7 +339,8 @@ mod test {
     use serde_json::json;
 
     use crate::matchers::comparators::{
-        AnyValueComparator, JSONContainsMatchComparator, JSONExactMatchComparator,
+        AnyValueComparator, 
+        // JSONContainsMatchComparator, JSONExactMatchComparator,
         StringContainsMatchComparator, StringExactMatchComparator, StringRegexMatchComparator,
         ValueComparator,
     };
@@ -362,54 +363,6 @@ mod test {
         assert_eq!(match_result, expected_match);
         assert_eq!(distance_result, expected_distance);
         assert_eq!(name_result, expected_name);
-    }
-
-    #[test]
-    fn json_exact_match_comparator_match() {
-        run_test(
-            &JSONExactMatchComparator::new(),
-            &json!({"name" : "Peter", "surname" : "Griffin"}),
-            &json!({"name" : "Peter", "surname" : "Griffin"}),
-            true,
-            0,
-            "equals",
-        );
-    }
-
-    #[test]
-    fn json_exact_match_comparator_no_match() {
-        run_test(
-            &JSONExactMatchComparator::new(),
-            &json!({"name" : "Peter", "surname" : "Griffin"}),
-            &json!({"name" : "Walter", "surname" : "White"}),
-            false,
-            9,
-            "equals",
-        );
-    }
-
-    #[test]
-    fn json_contains_comparator_match() {
-        run_test(
-            &JSONContainsMatchComparator::new(),
-            &json!({ "other" : { "human" : { "surname" : "Griffin" }}}),
-            &json!({ "name" : "Peter", "other" : { "human" : { "surname" : "Griffin" }}}),
-            true,
-            15, // compute distance even if values match!
-            "contains",
-        );
-    }
-
-    #[test]
-    fn json_contains_comparator_no_match() {
-        run_test(
-            &JSONContainsMatchComparator::new(),
-            &json!({ "surname" : "Griffin" }),
-            &json!({ "name" : "Peter", "other" : { "human" : { "surname" : "Griffin" }}}),
-            false,
-            35, // compute distance even if values match!
-            "contains",
-        );
     }
 
     #[test]

@@ -79,16 +79,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "assert-json-diff"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50f1c3703dd33532d7f0ca049168930e9099ecac238e23cf932f3a69c42f06da"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1231,12 +1221,10 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 name = "httpmock_server"
 version = "0.1.0"
 dependencies = [
- "assert-json-diff",
  "async-trait",
  "base64",
  "chrono",
  "fake",
- "form_urlencoded",
  "lazy_static",
  "levenshtein",
  "log",
