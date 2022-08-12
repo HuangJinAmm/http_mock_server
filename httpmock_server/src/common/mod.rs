@@ -78,7 +78,7 @@ lazy_static! {
             });
 }
 pub struct MockServer{
-    handler_dispatch: Arc<RwLock<RadixTree<u64>>>,
+    handler_dispatch: Arc<RwLock<RadixTree<Vec<u64>>>>,
     handlers: Arc<RwLock<HashMap<u64, MockDefine>>>,
 }
 
@@ -127,7 +127,16 @@ impl MockServer {
                 env.set_source(source);
                 let url = mock.get_url();
                 server.insert(id, mock.to_owned());
-                let _route_result = dispath.add(url.as_str(), id).map_err(|e|e.to_string())?;
+
+                if let Some(matches) = dispath.matches(url.as_str()) {
+                    let mut exist_data = matches.data.clone();
+                    if !exist_data.contains(&id) {
+                        exist_data.push(id);
+                        let _route_result = dispath.add(url.as_str(), exist_data).map_err(|e|e.to_string())?;
+                    }
+                } else {
+                    let _route_result = dispath.add(url.as_str(), vec![id]).map_err(|e|e.to_string())?;
+                }
                 return Ok(());
             }
         }
@@ -193,7 +202,7 @@ impl Default for MockServer {
 }
 
 pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServerHttpResponse> {
-    let mut handler_wrap:Option<MockFilterWrapper> = None;
+    let mut handler_wrap:Vec<MockFilterWrapper> = Vec::new();
     if let Ok(mock_server) = MOCK_SERVER.read() {
         if let Ok(server) = mock_server.handler_dispatch.read() {
             if let Some(mock) = server.matches(&req.path) {
@@ -205,33 +214,45 @@ pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServer
                                 map.insert(key, value);
                                 map
                             });
-                    if let Some(handler) = handlers.get(mock.data) {
-                        let hander_clone = handler.to_owned();
-                        handler_wrap = Some(MockFilterWrapper {
-                                                    mock_define: hander_clone,
-                                                    mis_matchs: None,
-                                                    req: req.clone(),
-                                                    resp: None,
-                                                    req_values: Some(exact_params),
-                                                });
+
+                    let ids = mock.data;
+                    for id in ids {
+                        if let Some(handler) = handlers.get(id) {
+                            let hander_clone = handler.to_owned();
+                            let handler_wrap_item = MockFilterWrapper {
+                                                        mock_define: hander_clone,
+                                                        mis_matchs: None,
+                                                        req: req.clone(),
+                                                        resp: None,
+                                                        req_values: Some(exact_params.clone()),
+                                                    };
+                            handler_wrap.push(handler_wrap_item);
+                        }
                     }
                 }
             }
         }
     }
 
-    if let Some(mut hander_w) = handler_wrap {
+    if handler_wrap.is_empty() {
+        return Err(Error::from_string("未找到相应的配置",StatusCode::NOT_FOUND));
+    }
+    let mut all_mis_matches = Vec::new();
+    for mut hander_w in handler_wrap {
         FILTERS.filter(&mut hander_w).await;
         if let Some(resp) = hander_w.resp {
             return Ok(resp);
         } else if let Some(mis_match) = hander_w.mis_matchs {
-            let resp = serde_json::to_string_pretty(&mis_match).unwrap();
+            all_mis_matches.extend(mis_match);
+        }
+
+    }
+
+    if all_mis_matches.is_empty() {
+            return Err(Error::from_string("服务器未返回任何数据",StatusCode::INTERNAL_SERVER_ERROR));
+    } else {
+            let resp = serde_json::to_string_pretty(&all_mis_matches).unwrap();
             let not_found = Error::from_string(resp,StatusCode::BAD_REQUEST);
             return Err(not_found);
-        } else {
-            return Err(Error::from_string("服务器未返回任何数据",StatusCode::INTERNAL_SERVER_ERROR));
-        }
-    } else {
-        return Err(Error::from_string("未找到相应的配置",StatusCode::NOT_FOUND));
     }
 }

@@ -14,14 +14,11 @@ const APP_KEY: &str = "mock_server_web_ui_xxx";
 // const SERVER_URL:&str = "../_mock_list";
 const SERVER_URL:&str = "http://localhost:13001/_mock_list";
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
     // Example stuff:
     label: String,
     filter: String,
     mock_info_list: Vec<MockDefine>,
-    #[serde(skip)]
     promise: Option<Promise<ehttp::Result<Vec<MockDefine>>>>,
 }
 
@@ -30,7 +27,7 @@ impl Default for TemplateApp {
         Self {
             filter: "".to_string(),
             // Example stuff:
-            label: "模拟服务器".to_owned(),
+            label: "".to_owned(),
             mock_info_list: Vec::new(),
             promise: None,
         }
@@ -67,27 +64,6 @@ impl TemplateApp {
 
         cc.egui_ctx.set_style(Arc::new(style));
 
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            let mut app: TemplateApp = eframe::get_value(storage, APP_KEY).unwrap_or_default();
-            let _promise = app.promise.get_or_insert_with(|| {
-                // Begin download.
-                // We download the image using `ehttp`, a library that works both in WASM and on native.
-                // We use the `poll-promise` library to communicate with the UI thread.
-                let ctx = cc.egui_ctx.clone();
-                let (sender, promise) = Promise::new();
-                let request =
-                    ehttp::Request::get("../_mock_list");
-                ehttp::fetch(request, move |response| {
-                    let mock_list = response.and_then(parse_response);
-                    sender.send(mock_list); // send the results back to the UI thread.
-                    ctx.request_repaint(); // wake up UI thread
-                });
-                promise
-            });
-            return app;
-        }
         let mut app = TemplateApp::default();
         let _promise = app.promise.get_or_insert_with(|| {
             // Begin download.
@@ -108,11 +84,6 @@ impl TemplateApp {
 }
 
 impl eframe::App for TemplateApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
@@ -121,7 +92,7 @@ impl eframe::App for TemplateApp {
             if hash.starts_with('#') {
                 hash.remove(0);
             }
-            self.filter = hash;
+            self.label = hash;
         }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -182,12 +153,14 @@ impl eframe::App for TemplateApp {
                         fm.push_str(mock_define.req.method.clone().unwrap_or_default().as_str());
                         fm.push_str(mock_define.req.path.clone().as_str());
 
-                        if self.filter.is_empty() {
+                        if self.filter.is_empty() && self.label.is_empty() {
                             mock_define_ui(ui, mock_define);
                         } else {
-                            if let Ok(re) = regex::Regex::new(&self.filter) {
-                                if re.is_match(fm.as_str()) {
-                                    mock_define_ui(ui, mock_define);
+                            if fm.contains(self.label.as_str()) {
+                                if let Ok(re) = regex::Regex::new(&self.filter) {
+                                    if re.is_match(fm.as_str()) {
+                                        mock_define_ui(ui, mock_define);
+                                    }
                                 }
                             }
                         }
