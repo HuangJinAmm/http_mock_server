@@ -79,8 +79,7 @@ impl ContextTree {
         active_ids
     }
 
-    fn list_all_subids(&self) -> Option<Vec<u64>> 
-        {
+    fn list_all_subids(&self) -> Option<Vec<u64>> {
         let subs = self.sub_items.clone();
         if subs.is_empty() {
             None
@@ -98,6 +97,15 @@ impl ContextTree {
                         .collect();
             Some(sub_ids)
         }
+    }
+
+    pub fn max_id(&self) -> u64 {
+        if let Some(subids) = self.list_all_subids() {
+            if let Some(max_id) = subids.iter().max() {
+                return max_id.to_owned();
+            }
+        }
+        return self.id;
     }
 
     pub fn new(id: u64, title: &str) -> Self {

@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::fs::{self, DirEntry};
 use std::io::BufReader;
 use std::path::PathBuf;
+use std::process::id;
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver};
 
@@ -375,13 +376,12 @@ impl eframe::App for TemplateApp {
                 if let Some(file_p) = file.path {
                     if let Some(ext) = file_p.extension() {
                         if ext == "json" {
-                            load_app(file_p, self);
+                            load_app(file_p, self,ctx);
                         }
                     }
                 }
             }
         }
-
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
@@ -441,7 +441,7 @@ impl eframe::App for TemplateApp {
                             .set_directory(".")
                             .pick_file()
                         {
-                            if load_app(path, self) {
+                            if load_app(path, self,ctx) {
                                 add_notification(ctx, "加载成功");
                             } else {
                                 add_notification(ctx, "加载失败");
@@ -602,9 +602,18 @@ impl eframe::App for TemplateApp {
             };
             match self.apptab {
                 AppTab::Mock => {
-                    if ui.button("预览").clicked(){
-                        net_ui.mock_define_info.is_edit = !net_ui.mock_define_info.is_edit;
-                    }
+                    ui.horizontal(|ui|{
+                        if net_ui.mock_define_info.is_edit {
+                            if ui.button("编辑").clicked(){
+                                net_ui.mock_define_info.is_edit = !net_ui.mock_define_info.is_edit;
+                            }
+                        } else {
+                            if ui.button("预览").clicked(){
+                                net_ui.mock_define_info.is_edit = !net_ui.mock_define_info.is_edit;
+                            }
+                        }
+                        crate::esay_md::nested_hotkeys_ui(ui);
+                    });
                     let mut md_editor = EasyMarkEditor::default();
                     md_editor.ui(ui, &mut net_ui.mock_define_info.remark, &mut net_ui.mock_define_info.is_edit);
                 }
@@ -751,7 +760,7 @@ fn get_backup_name(app_name:&str) -> String {
     format!("{}-{}-{}.json",app_name,PORT,fmt_data.to_string())
 }
 
-fn load_app(file:PathBuf,app:&mut TemplateApp) -> bool {
+fn load_app(file:PathBuf,app:&mut TemplateApp,ctx:&egui::Context) -> bool {
     if let Ok(file) = std::fs::File::open(file) {
         let reader = BufReader::new(file);
         let new_app: TemplateApp = serde_json::from_reader(reader).unwrap();
@@ -760,7 +769,12 @@ fn load_app(file:PathBuf,app:&mut TemplateApp) -> bool {
         app.records = new_app.records;
         app.records_list = new_app.records_list;
         app.records_list.list_all_active_ids().into_iter().for_each(|id|app.records_list.disable_item(id));
-        true 
+
+        {
+            let mut data =ctx.data();
+            data.insert_persisted(Id::new(ID_COUNT_KEY), app.records_list.max_id());
+        }
+        true
     } else {
         false
     }

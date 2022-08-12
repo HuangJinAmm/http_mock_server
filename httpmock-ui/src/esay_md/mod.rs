@@ -9,3 +9,4 @@ pub use easy_mark_editor::EasyMarkEditor;
 pub use easy_mark_highlighter::MemoizedEasymarkHighlighter;
 pub use easy_mark_parser as parser;
 pub use easy_mark_viewer::easy_mark;
+pub use easy_mark_editor::nested_hotkeys_ui;
