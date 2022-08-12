@@ -17,10 +17,20 @@ const PORT:&str = dotenv_codegen::dotenv!("PORT");
 fn main() {
     // Log to stdout (if you run with `RUST_LOG=debug`).
 
-    tracing_subscriber::fmt::init();
-    
+    // let logsub = tracing_subscriber::FmtSubscriber::builder()
+    //         .with_max_level(Level::DEBUG)
+    //         .with_env_filter("httpmock_ui=debug,httpmock_server=debug")
+    //         .finish();
+
+    // tracing::subscriber::set_global_default(logsub).expect("日志初始化失败");
+
+    tracing_subscriber::fmt().with_max_level(Level::INFO).with_env_filter("httpmock_ui=debug,httpmock_server=debug").init();
+
     let path = format!("0.0.0.0:{}", PORT);
+    log::info!("服务器地址：{}",path);
     use std::thread;
+
+    use tracing::Level;
     thread::spawn(move ||{
         tokio::runtime::Builder::new_multi_thread().worker_threads(1)
         .enable_all().build().unwrap().block_on(async {

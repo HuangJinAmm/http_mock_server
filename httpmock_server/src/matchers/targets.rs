@@ -55,11 +55,21 @@ impl ValueTarget<Value> for JSONBodyTarget {
         if body.is_none() || body.unwrap().is_empty(){
             return None;
         }
-
+        let body_vec = body.unwrap();
+        if let Ok(body_str) = String::from_utf8(body_vec.to_owned()) {
+            let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
+            let dealed_body = re.replace(&body_str, "");
+            match serde_json::from_str(dealed_body.as_ref()) {
+                Ok(v) => {return Some(v)},
+                Err(e) => {
+                    log::trace!("paser json error:{}",e);
+                    return None;
+                },
+            }
+        }
         match serde_json::from_slice(body.unwrap()) {
             Err(e) => {
                 log::trace!("Cannot parse json value: {}", e);
-                dbg!("Cannot parse json value: {}", e);
                 None
             }
             Ok(v) => Some(v),

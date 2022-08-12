@@ -6,7 +6,7 @@ async fn main() {
     // .with(fmt::layer())
     // .init();
     if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "poem=debug");
+        std::env::set_var("RUST_LOG", "httpmock_server=debug");
     }
     tracing_subscriber::fmt::init();
     log::info!("启动....");

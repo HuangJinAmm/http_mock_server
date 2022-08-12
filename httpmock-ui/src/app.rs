@@ -273,7 +273,7 @@ impl TemplateApp {
         app.add_reciever = Some(add_reciever);
 
         let mut app:TemplateApp = if let Some(storage) = cc.storage {
-            println!("加载存储数据==================");
+            log::debug!("加载存储数据==================");
             let mut app: TemplateApp = eframe::get_value(storage, APP_KEY).unwrap_or_default();
             app.is_exiting = false;
             app.can_exit = false;
@@ -347,7 +347,7 @@ impl eframe::App for TemplateApp {
     fn on_exit_event(&mut self) -> bool {
 
         let backup_name = get_backup_name("app_mock");
-        println!("保存文件=>{}",backup_name);
+        log::debug!("保存文件=>{}",backup_name);
         let _ = backup_app(self,&backup_name);
         true
         // self.is_exiting = true;

@@ -29,37 +29,7 @@ use crate::common::{MockServer, MOCK_SERVER, handle_mock_requset};
 
 
 pub async fn serve(path:&str) -> Result<(), Error> {
-    // {
-        // let mock_define = MockDefine {
-        //     id: 1,
-        //     req: HttpMockRequest::new("/abc/*path".into()),
-        //     resp: MockServerHttpResponse {
-        //         status: Some(200),
-        //         headers: None,
-        //         body: Some("hello_world {{NAME_ZH()}} from {{ctx.path}}".as_bytes().to_vec()),
-        //         delay: None,
-        //     },
-        //     relay_url: None,
-        // };
-        // let mock_define2 = MockDefine {
-        //     id: 2,
-        //     req: HttpMockRequest::new("/*".into()),
-        //     resp: MockServerHttpResponse {
-        //         status: Some(200),
-        //         headers: None,
-        //         body: Some("hello_world {{NAME_ZH()}},{{EMAIL()}}".as_bytes().to_vec()),
-        //         delay: Some(Duration::from_millis(2000)),
-        //     },
-        //     relay_url: None,
-        // };
-        // let mut mock_server = MOCK_SERVER.write().unwrap();
-        // mock_server.add(mock_define);
-        // mock_server.add(mock_define2);
-    // }
-    // let app = RouteScheme::new().http(mock_handle).with(Tracing);
-
     let cors = Cors::default();
-
     let controller = get(mock_handle).put(mock_handle)
                                     .delete(mock_handle)
                                     .options(mock_handle)
@@ -73,6 +43,7 @@ pub async fn serve(path:&str) -> Result<(), Error> {
             StaticFilesEndpoint::new("./docs").index_file("index.html"),
         )
         .at("/*", controller).with(cors).with(Tracing);
+    log::debug!("启动服务...");
     Server::new(TcpListener::bind(path))
         .run(app)
         .await
