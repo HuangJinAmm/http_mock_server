@@ -22,8 +22,7 @@ const DEFAULT_FMT: &str = "%Y-%m-%dT%H:%M:%S";
 lazy_static! {
     pub static ref TEMP_ENV: Arc<RwLock<Environment<'static>>> = {
         let mut t_env = Environment::new();
-        t_env.add_function("NAME_ZH", fake_name_zh);
-        t_env.add_function("NAME_EN", fake_name_en);
+        t_env.add_function("NAME", fake_name_zh);
         t_env.add_function("NUM", fake_num);
         t_env.add_function("NUM_STR", fake_num_str);
         t_env.add_function("HEX", fake_hex);
@@ -43,6 +42,8 @@ lazy_static! {
         t_env.add_function("DATE_BEFORE", fake_datetime_before);
         t_env.add_function("DATE_AFTER", fake_datetime_after);
         t_env.add_function("DATE",fake_datetime);
+
+        t_env.add_function("DATE_ADD",fake_date_add);
 
 
         t_env.add_function("BASE64_EN",fake_base64_en);
@@ -115,13 +116,14 @@ fn aes_enc_ctr(_state: &State<'_, '_>, value: String,key:String,iv:String) -> Re
         .map_err(|e| Error::new(ErrorKind::InvalidArguments,e))
 }
 
-fn fake_name_zh(_state: &State<'_, '_>) -> Result<String, Error> {
+fn fake_name_zh(_state: &State<'_, '_>,name_type:Option<String>) -> Result<String, Error> {
+    if let Some(t) = name_type {
+        if t.to_lowercase() == "en" {
+            let name = NameEn().fake();
+            return Ok(name);
+        }
+    }
     let name = NameZh().fake();
-    Ok(name)
-}
-
-fn fake_name_en(_state: &State<'_, '_>) -> Result<String, Error> {
-    let name = NameEn().fake();
     Ok(name)
 }
 
@@ -230,14 +232,31 @@ fn fake_now(_state: &State<'_, '_>,fmt:Option<String>) -> Result<String, Error> 
     Ok(fmt_data.to_string())
 }
 
+fn fake_date_add(_state: &State<'_, '_>,duration:i64,date:Option<String>,fmt:Option<String>) -> Result<String, Error> {
+    let fmt = match fmt {
+        Some(f) => f,
+        None => DEFAULT_FMT.to_owned(),
+    };
+    let dura = Duration::seconds(duration);
+    let local = if let Some(date_str) = date {
+        if let Ok(start) = Local.datetime_from_str(date_str.as_str(), "%Y-%m-%dT%H:%M:%S") {
+            start
+        } else {
+            Local::now()
+        }
+    } else {
+        Local::now()
+    };
+    let fake_date = local.checked_add_signed(dura).unwrap();
+    let fmt_data =fake_date.format(fmt.as_str());
+    Ok(fmt_data.to_string())
+}
 
-// fn fake_date_add(_state: &State<'_, '_>,fmt:Option<String>) -> Result<String, Error> {
-//     let local = Local::now();
-//     let fmt_data = local.format(fmt.as_str());
-//     Ok(fmt_data.to_string())
-// }
-
-fn fake_datetime(_state: &State<'_, '_>,fmt:String) -> Result<String, Error> {
+fn fake_datetime(_state: &State<'_, '_>,fmt:Option<String>) -> Result<String, Error> {
+    let fmt = match fmt {
+        Some(f) => f,
+        None => DEFAULT_FMT.to_owned(),
+    };
     let local =Utc::now();
     let ten_years = Duration::days(3660);
     let start = local.checked_sub_signed(ten_years).unwrap();

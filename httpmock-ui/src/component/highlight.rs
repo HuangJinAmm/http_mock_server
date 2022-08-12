@@ -7,8 +7,7 @@ type EditCursorPair = (usize,usize);
 lazy_static! {
     static ref TEMPLATE_HINT: Arc<Mutex<TemplateHint>> = {
         let mut tmh = TemplateHint::new();
-        tmh.add(TemplateHintInfo::new("中文名".into(), "随机中文名字".into(),"{{NAME_ZH()}}".into()));
-        tmh.add(TemplateHintInfo::new("英文名".into(), "随机英文名字".into(),"{{NAME_EN()}}".into()));
+        tmh.add(TemplateHintInfo::new("姓名".into(), "默认随机中文名字,设置en参数则为英文名".into(),"{{NAME('en')}}".into()));
         tmh.add(TemplateHintInfo::new("用户名".into(), "随机用户名字".into(),"{{USERNAME()}}".into()));
         tmh.add(TemplateHintInfo::new("邮件地址".into(), "随机邮件地址".into(),"{{EMAIL()}}".into()));
         tmh.add(TemplateHintInfo::new("IPV4地址".into(), "随机IPV4地址".into(),"{{IPV4()}}".into()));
@@ -31,6 +30,7 @@ lazy_static! {
 
         tmh.add(TemplateHintInfo::new("NOW".into(), "生成当前时间,需要送日期格式化字符串".into(),r#"{{NOW('%Y-%m-%dT%H:%M:%S')}}"#.into()));
         tmh.add(TemplateHintInfo::new("DATE".into(), "随机日期时间,需要送日期格式化字符串".into(),r#"{{DATE('%Y-%m-%dT%H:%M:%S')}}"#.into()));
+        tmh.add(TemplateHintInfo::new("DATE_ADD".into(), "日期加减操作函数".into(),r#"{{DATE_ADD(秒数,'日期','%Y-%m-%dT%H:%M:%S')}}"#.into()));
         tmh.add(TemplateHintInfo::new("DATE_BEFORE".into(), "随机生成指定日期前的时间,需要送日期格式化字符串".into(),r#"{{DATE_BEFORE('%Y-%m-%dT%H:%M:%S','2020-01-01T00:00:00')}}"#.into()));
         tmh.add(TemplateHintInfo::new("DATE_AFTER".into(), "随机生成指定日期后的时间,需要送日期格式化字符串".into(),r#"{{DATE_AFTER('%Y-%m-%dT%H:%M:%S','2020-01-01T00:00:00')}}"#.into()));
 
