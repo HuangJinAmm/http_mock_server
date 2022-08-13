@@ -202,6 +202,7 @@ impl Default for MockServer {
 }
 
 pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServerHttpResponse> {
+    log::info!("开始处理请求{}",&req.path);
     let mut handler_wrap:Vec<MockFilterWrapper> = Vec::new();
     if let Ok(mock_server) = MOCK_SERVER.read() {
         if let Ok(server) = mock_server.handler_dispatch.read() {
@@ -214,8 +215,9 @@ pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServer
                                 map.insert(key, value);
                                 map
                             });
-
                     let ids = mock.data;
+                    log::debug!("匹配到的模板ids：{:#?}",&ids);
+                    log::debug!("提取请求变量：{:#?}",&exact_params);
                     for id in ids {
                         if let Some(handler) = handlers.get(id) {
                             let hander_clone = handler.to_owned();
@@ -235,12 +237,14 @@ pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServer
     }
 
     if handler_wrap.is_empty() {
+        log::info!("未找到对应的配置");
         return Err(Error::from_string("未找到相应的配置",StatusCode::NOT_FOUND));
     }
     let mut all_mis_matches = Vec::new();
     for mut hander_w in handler_wrap {
         FILTERS.filter(&mut hander_w).await;
         if let Some(resp) = hander_w.resp {
+            log::debug!("返回响应:{:#?}",&resp);
             return Ok(resp);
         } else if let Some(mis_match) = hander_w.mis_matchs {
             all_mis_matches.extend(mis_match);
@@ -249,10 +253,12 @@ pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServer
     }
 
     if all_mis_matches.is_empty() {
-            return Err(Error::from_string("服务器未返回任何数据",StatusCode::INTERNAL_SERVER_ERROR));
+        log::info!("服务器未返回任何数据");
+        return Err(Error::from_string("服务器未返回任何数据",StatusCode::INTERNAL_SERVER_ERROR));
     } else {
-            let resp = serde_json::to_string_pretty(&all_mis_matches).unwrap();
-            let not_found = Error::from_string(resp,StatusCode::BAD_REQUEST);
-            return Err(not_found);
+        let resp = serde_json::to_string_pretty(&all_mis_matches).unwrap();
+        log::info!("匹配失败:{}",&resp);
+        let not_found = Error::from_string(resp,StatusCode::BAD_REQUEST);
+        return Err(not_found);
     }
 }

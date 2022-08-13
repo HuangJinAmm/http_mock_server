@@ -115,8 +115,11 @@ pub fn match_json_key(root:String,mock:&Value,req:&Value) -> Option<String>{
 impl ValueComparator<Value, Value> for JSONRegexMatchComparator {
 
     fn matches(&self, mock_value: &Value, req_value: &Value) -> bool {
+        log::debug!("JsonRegexMatchComparator执行");
         let root = "$".to_string();
-        match_json_key(root, mock_value, req_value).is_none()
+        let res = match_json_key(root, mock_value, req_value).is_none();
+        log::debug!("JsonRegexMatchComparator执行结果:{}",res);
+        res
     }
 
     fn name(&self) -> &str {
@@ -257,7 +260,10 @@ impl StringRegexMatchComparator {
 
 impl ValueComparator<String, String> for StringRegexMatchComparator {
     fn matches(&self, mock_value: &String, req_value: &String) -> bool {
-        match_string_regex(mock_value, req_value)
+        log::debug!("StringRegexMatchComparator 执行");
+        let res = match_string_regex(mock_value, req_value);
+        log::debug!("StringRegexMatchComparator 执行结果：{}",res);
+        res
     }
 
     fn name(&self) -> &str {

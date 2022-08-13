@@ -7,6 +7,8 @@ extern crate lazy_static;
 mod app;
 mod component;
 use app::TemplateApp;
+use log::LevelFilter;
+use log4rs::{append::{console::ConsoleAppender, file::FileAppender}, encode::pattern::PatternEncoder, Config, config::{Appender, Root, Logger} };
 mod history_db;
 pub mod esay_md;
 
@@ -16,7 +18,7 @@ const PORT:&str = dotenv_codegen::dotenv!("PORT");
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     // Log to stdout (if you run with `RUST_LOG=debug`).
-
+    log4rs::init_file("log.yml", Default::default()).unwrap();
     // let logsub = tracing_subscriber::FmtSubscriber::builder()
     //         .with_max_level(Level::DEBUG)
     //         .with_env_filter("httpmock_ui=debug,httpmock_server=debug")
@@ -24,13 +26,15 @@ fn main() {
 
     // tracing::subscriber::set_global_default(logsub).expect("日志初始化失败");
 
-    tracing_subscriber::fmt().with_max_level(Level::INFO).with_env_filter("httpmock_ui=debug,httpmock_server=debug").init();
+    // tracing_subscriber::fmt().with_max_level(Level::INFO).with_env_filter("httpmock_ui=debug,httpmock_server=debug").init();
 
     let path = format!("0.0.0.0:{}", PORT);
     log::info!("服务器地址：{}",path);
-    use std::thread;
+    // use std::thread;
 
-    use tracing::Level;
+    // use tracing::Level;
+
+    use std::thread;
     thread::spawn(move ||{
         tokio::runtime::Builder::new_multi_thread().worker_threads(1)
         .enable_all().build().unwrap().block_on(async {
@@ -50,3 +54,26 @@ fn main() {
         Box::new(|cc| Box::new(TemplateApp::new(cc))),
     );
 }
+
+// fn init_log() {
+//     let stdout = ConsoleAppender::builder()
+//         .encoder(Box::new(PatternEncoder::new("{d} - {l} -{t} - {m}{n}")))
+//         .build();
+
+//     let file = FileAppender::builder()
+//         .encoder(Box::new(PatternEncoder::new("{d} - {l} - {t} - {m}{n}")))
+//         .build("log/test.log")
+//         .unwrap();
+
+//     let config = Config::builder()
+//         .appender(Appender::builder().build("stdout", Box::new(stdout)))
+//         .appender(Appender::builder().build("file", Box::new(file)))
+//         .logger(Logger::builder()
+//             .appender("file")
+//             .additive(false)
+//             .build("app", LevelFilter::Info))
+//         .build(Root::builder().appender("stdout").build(LevelFilter::Debug))
+//         .unwrap();
+
+//     let _ = log4rs::init_config(config).unwrap();
+// }

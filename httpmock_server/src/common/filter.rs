@@ -1,6 +1,7 @@
 
 use std::collections::BTreeMap;
-use std::fmt::Display;
+use std::error::Error;
+use std::fmt::{Display, Debug};
 
 use async_trait::async_trait;
 use minijinja::value::Value;
@@ -53,6 +54,7 @@ pub struct RequestFilter {
 #[async_trait]
 impl MockFilter for RequestFilter {
     async fn filter(&self, filter_wrapper: &mut MockFilterWrapper) {
+        log::debug!("开始执行过滤器逻辑");
         let req = &filter_wrapper.req;
         let mock = &mut filter_wrapper.mock_define.req;
         let matched = self
@@ -63,7 +65,9 @@ impl MockFilter for RequestFilter {
             .body_mather
             .iter()
             .any(|matcher| matcher.matches(req, mock));
-        
+
+        log::debug!("请求数据匹配:{}",matched);
+        log::debug!("请求Body匹配:{}",body_matcher);
         if matched && body_matcher {
             let resp;
             if let Some(_url) = filter_wrapper.mock_define.relay_url.clone() {
@@ -113,6 +117,7 @@ impl MockHandler for JinjaTemplateHandler {
         let mut ret_mock_resp:Option<MockServerHttpResponse> = None;
         let start = std::time::SystemTime::now();
 
+        log::debug!("JinjaTemplateHandler 执行");
         //提取相关模板变量
         let path = req.req_values.clone().unwrap_or_default();
 
@@ -134,7 +139,7 @@ impl MockHandler for JinjaTemplateHandler {
         } = request;
 
         let temp_ctx = context!(path, url, body, method, headers, query_params);
-
+        log::debug!("获取到的局部变量{:#?}",&temp_ctx);
         if let Ok(env) = TEMP_ENV.read() {
             //处理body模板
             let body_temp_key = format!("{}_body", mock_resp_id.as_str());
@@ -175,6 +180,7 @@ impl MockHandler for JinjaTemplateHandler {
             if let Some(sleep) = delay.checked_sub(end) {
                 if sleep.as_millis() > 120 {
                     // thread::sleep(sleep);
+                    log::debug!("延时：{:#?}",&sleep);
                     let _ = tokio::time::sleep(sleep).await;
                 }
             }
@@ -188,15 +194,18 @@ pub struct RelayServerHandler {}
 #[async_trait]
 impl MockHandler for RelayServerHandler {
     async fn handle(&self, req: &mut MockFilterWrapper) -> Option<MockServerHttpResponse> {
+        log::debug!("转发处理逻辑开始");
         let client = reqwest::Client::new();
         let mut req_clone = req.req.clone();
         if let Some(redict_url) = req.mock_define.relay_url.clone() {
+            log::debug!("转发地址：{}",&redict_url);
             req_clone.path = redict_url;
             let real_req = req_clone.into(); 
             let resp = client.execute(real_req);
             match resp.await {
                 Ok(r) => {
                     let status = Some(r.status().as_u16());
+                    log::debug!("转发响应状态：{:#?}",&status);
                     let mut headers: Vec<(String, String)> = Vec::new();
                     for (hn, hv) in r.headers().iter() {
                         let hns = hn.to_string();
@@ -212,6 +221,7 @@ impl MockHandler for RelayServerHandler {
                     })
                 }
                 Err(e) => {
+                    log::error!("转发响应错误:{:#?}",&e);
                     let body = Some(e.to_string().as_bytes().to_vec());
                     Some(MockServerHttpResponse {
                         status: Some(500),
@@ -249,6 +259,8 @@ impl Matcher for RegexValueMatcher {
     fn matches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> bool {
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.target.parse_from_request(mock);
+        log::debug!("MockValue:{:#?}",&mock_value);
+        log::debug!("ReqValue:{:#?}",&req_value);
         // let mock_body = mock.body.clone().unwrap();
         // dbg!(String::from_utf8(mock_body).unwrap());
         // dbg!(&mock_value);
@@ -334,11 +346,13 @@ where
 
 impl<T> Matcher for SingleValueMatcher<T>
 where
-    T: Display,
+    T: Display+Debug,
 {
     fn matches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> bool {
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.target.parse_from_request(mock);
+        log::debug!("MockValue:{:#?}",&mock_value);
+        log::debug!("ReqValue:{:#?}",&req_value);
         match (mock_value, req_value) {
                     (None, _) => return true,
                     (Some(_), None) => return false,

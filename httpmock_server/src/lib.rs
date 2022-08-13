@@ -43,7 +43,7 @@ pub async fn serve(path:&str) -> Result<(), Error> {
             StaticFilesEndpoint::new("./docs").index_file("index.html"),
         )
         .at("/*", controller).with(cors).with(Tracing);
-    log::debug!("启动服务...");
+    log::info!("启动服务...");
     Server::new(TcpListener::bind(path))
         .run(app)
         .await

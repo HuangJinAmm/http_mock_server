@@ -41,9 +41,10 @@ httpmock_server = {path = "../httpmock_server"}
 dotenv_codegen = "0.15.0"
 reqwest = {version="0.11.10",features=["cookies","multipart","json"]}
 tokio={version="1.19.2",features=["rt","rt-multi-thread"]}
-env_logger = "0.9"
-tracing = {version="0.1.35"}
-tracing-subscriber = { version ="0.3.15", features = ["env-filter"] }
+log4rs = "1.1.1"
+# env_logger = "0.9"
+# tracing = {version="0.1.35"}
+# tracing-subscriber = { version ="0.3.15", features = ["env-filter"] }
 # web:
 # [target.'cfg(target_arch = "wasm32")'.dependencies]
 # console_error_panic_hook = "0.1.6"
