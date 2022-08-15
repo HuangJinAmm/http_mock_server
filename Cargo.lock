@@ -1245,8 +1245,6 @@ dependencies = [
  "rust-crypto",
  "serde",
  "serde_json",
- "serde_regex",
- "serde_urlencoded",
  "similar",
  "smallvec",
  "thiserror",
@@ -2468,16 +2466,6 @@ checksum = "9b7ce2b32a1aed03c558dc61a5cd328f15aff2dbc17daad8fb8af04d2100e15c"
 dependencies = [
  "itoa",
  "ryu",
- "serde",
-]
-
-[[package]]
-name = "serde_regex"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8136f1a4ea815d7eac4101cfd0b16dc0cb5e1fe1b8609dfd728058656b7badf"
-dependencies = [
- "regex",
  "serde",
 ]
 
