@@ -1,5 +1,3 @@
-extern crate serde_regex;
-
 use poem::http::{HeaderMap, HeaderValue};
 use poem::web::IntoResponse;
 use poem::{FromRequest, Request, RequestBody, Result};
