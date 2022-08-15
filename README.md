@@ -20,7 +20,7 @@
 
 主要用于模拟接口数据、简单的接口管理、动态调整接口数据等场景,定位用户为测试、项目管理人员。ui用于配置控制，运行与本地电脑上。web用于信息展示。
 
-![draw.io_zp8l9BK2pQ.png](.\screenshots\draw.io_zp8l9BK2pQ.png)
+![draw.io_zp8l9BK2pQ.png](screenshots/draw.io_zp8l9BK2pQ.png)
 
 ## 
 
@@ -51,19 +51,19 @@
        
        6. **筛选条件**：筛选名字包含输入字符的目录节点；
    
-   ![httpmock_ui_rE8tNN3H3M.png](.\screenshots\微信截图_20220815095530.png)
+   ![httpmock_ui_rE8tNN3H3M.png](screenshots/微信截图_20220815095530.png)
    
    - 文档说明页面
    
    文档支持简单的markmd语法。
    
-   ![httpmock_ui_hM3w38tn70.png](.\screenshots\httpmock_ui_hM3w38tn70.png)
+   ![httpmock_ui_hM3w38tn70.png](screenshots/httpmock_ui_hM3w38tn70.png)
    
    - 查看信息界面(web)[http://localhost:13001/_mock_info/]() 
    
    用于查看模拟服务器服务的规则。支持简单的过滤（标题中包含输入字符则显示）。另外支持 路径后面添加hash(#)来过滤。可用于文档中的链接和跳转。
    
-   - ![chrome_WOMW8eff8i.png](.\screenshots\chrome_WOMW8eff8i.png)
+   - ![chrome_WOMW8eff8i.png](screenshots/chrome_WOMW8eff8i.png)
 
 2. 配置
    
