@@ -6,23 +6,26 @@ appenders:
     encoder:
       pattern: "{d} [{t}] {l} - {m}{n}"
   server:
-    # kind: file
-    # path: "log/test.log"
-    kind: rolling_file
-    path: 'log/test.log'
+    kind: file
+    path: "log/test.log"
+    append: true 
     encoder:
       pattern: "{d} [{t}] {l} - {m}{n}"
-    policy:
-      kind: compound
-      trigger:
-        kind: size
-        limit: 5mb
-      roller:
-        kind: fixed_window
-        pattern: 'log/test.{}.log'
-        # pattern: 'log/test.{}.log'
-        base: 1
-        count: 5
+    # kind: rolling_file
+    # path: 'log/test.log'
+    # encoder:
+    #   pattern: "{d} [{t}] {l} - {m}{n}"
+    # policy:
+    #   kind: compound
+    #   trigger:
+    #     kind: size
+    #     limit: 5mb
+    #   roller:
+    #     kind: fixed_window
+    #     pattern: 'log/test.{}.log'
+    #     # pattern: 'log/test.{}.log'
+    #     base: 1
+    #     count: 5
 
 
 root:

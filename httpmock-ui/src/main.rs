@@ -7,8 +7,7 @@ extern crate lazy_static;
 mod app;
 mod component;
 use app::TemplateApp;
-use log::LevelFilter;
-use log4rs::{append::{console::ConsoleAppender, file::FileAppender}, encode::pattern::PatternEncoder, Config, config::{Appender, Root, Logger} };
+// use log4rs::{append::{console::ConsoleAppender, file::FileAppender}, encode::pattern::PatternEncoder, Config, config::{Appender, Root, Logger} };
 mod history_db;
 pub mod esay_md;
 
@@ -18,7 +17,7 @@ const PORT:&str = dotenv_codegen::dotenv!("PORT");
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     // Log to stdout (if you run with `RUST_LOG=debug`).
-    log4rs::init_file("log.yml", Default::default()).unwrap();
+    // log4rs::init_file("log.yml", Default::default()).unwrap();
     // let logsub = tracing_subscriber::FmtSubscriber::builder()
     //         .with_max_level(Level::DEBUG)
     //         .with_env_filter("httpmock_ui=debug,httpmock_server=debug")

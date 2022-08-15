@@ -72,14 +72,14 @@ impl EasyMarkEditor {
 }
 
 pub fn nested_hotkeys_ui(ui: &mut egui::Ui) {
-    let _ = ui.label("CTRL+B *bold*");
-    let _ = ui.label("CTRL+N `code`");
-    let _ = ui.label("CTRL+I /italics/");
-    let _ = ui.label("CTRL+L $subscript$");
-    let _ = ui.label("CTRL+Y ^superscript^");
-    let _ = ui.label("ALT+Q ~strikethrough~");
-    let _ = ui.label("ALT+W _underline_");
-    let _ = ui.label("ALT+E two spaces"); // Placeholder for tab indent
+    let _ = ui.label("CTRL+B *加粗*");
+    let _ = ui.label("CTRL+N `代码`");
+    let _ = ui.label("CTRL+I /斜体/");
+    let _ = ui.label("CTRL+L $下角标$");
+    let _ = ui.label("CTRL+Y ^上角标^");
+    let _ = ui.label("ALT+Q ~删除线~");
+    let _ = ui.label("ALT+W _下划线_");
+    let _ = ui.label("ALT+E 缩进"); // Placeholder for tab indent
 }
 
 fn shortcuts(ui: &Ui, code: &mut dyn TextBuffer, ccursor_range: &mut CCursorRange) -> bool {

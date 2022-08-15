@@ -71,7 +71,7 @@ impl TemplateApp {
             // We use the `poll-promise` library to communicate with the UI thread.
             let ctx = cc.egui_ctx.clone();
             let (sender, promise) = Promise::new();
-            let request = ehttp::Request::get(format!("http://{}/_mock_list", "127.0.0.1:3000"));
+            let request = ehttp::Request::get(SERVER_URL);
             ehttp::fetch(request, move |response| {
                 let mock_list = response.and_then(parse_response);
                 sender.send(mock_list); // send the results back to the UI thread.
@@ -225,11 +225,18 @@ fn mock_info_ui(ui: &mut Ui, mock_define: &MockDefine) {
     // ui.label(remark);
     ui.columns(2, |ui| {
         ui[0].group(|ui| mock_req_ui(ui, &mock_define.req,format!("{}-{}",mock_define.id, "req").as_str()));
+        ui[1].group(|ui| {
+
         if let Some(url) = &mock_define.relay_url {
-            ui[1].label("转发到：");
-            ui[1].label(RichText::new(url).underline().color(egui::Color32::GREEN));
-        } 
-        ui[1].group(|ui| mock_resp_ui(ui, &mock_define.resp,format!("{}-{}",mock_define.id, "resp").as_str()));
+            ui.horizontal(|ui|{
+                ui.label("转发到：");
+                ui.hyperlink(url);
+            });
+            mock_resp_ui(ui, &mock_define.resp,false);
+        } else {
+            mock_resp_ui(ui, &mock_define.resp,true);
+        }
+        });
     });
 }
 // fn header_vec_ui(ui: &mut Ui, map: &Vec<(String, String)>,id:&str) {
@@ -328,7 +335,7 @@ fn hashmap_header_table(ui: &mut Ui, map: &HashMap<String, String>) {
 //         });
 // }
 
-fn mock_resp_ui(ui: &mut Ui, resp: &MockServerHttpResponse,id:&str) {
+fn mock_resp_ui(ui: &mut Ui, resp: &MockServerHttpResponse,is_mock:bool) {
     let MockServerHttpResponse {
         status,
         headers,
@@ -339,15 +346,18 @@ fn mock_resp_ui(ui: &mut Ui, resp: &MockServerHttpResponse,id:&str) {
     let status = status.unwrap_or(200);
     let delay = delay.unwrap_or_default();
 
-    ui.horizontal(|ui|{
-        ui.label("响应行为：");
-        ui.label("响应码");
-        ui.label(status.to_string());
-        ui.end_row();
-        ui.label("自定义延时");
-        ui.label(delay.as_millis().to_string());
-    });
+    if is_mock {
 
+        ui.horizontal(|ui|{
+            ui.label("响应行为：");
+            ui.label("响应码");
+            ui.label(status.to_string());
+            ui.end_row();
+            ui.label("自定义延时");
+            ui.label(delay.as_millis().to_string());
+        });
+
+    }
     if let Some(head_vec) = headers {
         if !head_vec.is_empty() {
             ui.label("响应头：");

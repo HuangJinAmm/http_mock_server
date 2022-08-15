@@ -54,11 +54,13 @@ lazy_static! {
         t_env.add_function("AES_CBC_DE", aes_dec_cbc);
         t_env.add_function("AES_CTR_EN", aes_enc_ctr);
         t_env.add_function("AES_CTR_DE", aes_dec_ctr);
+        t_env.add_filter("INT", to_int);
 
         t_env.add_filter("base64Encode", fake_base64_en);
         t_env.add_filter("AesEcbEnc", aes_enc_ecb);
         t_env.add_filter("AesCbcEnc", aes_enc_cbc);
         t_env.add_filter("AesCtrEnc", aes_enc_ctr);
+        t_env.add_filter("INT", to_int);
         let source = Source::new();
         t_env.set_source(source);
         Arc::new(RwLock::new(t_env))
@@ -79,6 +81,9 @@ lazy_static! {
 //         .unwrap_or_else(|_s| template.to_string());
 //     Ok(result)
 // }
+fn to_int(_state: &State, value: String) -> Result<i32, Error> {
+    value.parse::<i32>().map_err(|e|Error::new(ErrorKind::InvalidArguments, format!("{}cant turn to int", value)))
+}
 
 fn aes_dec_ecb(_state: &State<'_, '_>, value: String,key:String) -> Result<String,Error> {
     aes_dec_ecb_string(key.as_str(), value.as_str())
