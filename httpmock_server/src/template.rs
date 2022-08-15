@@ -54,7 +54,7 @@ lazy_static! {
         t_env.add_function("AES_CBC_DE", aes_dec_cbc);
         t_env.add_function("AES_CTR_EN", aes_enc_ctr);
         t_env.add_function("AES_CTR_DE", aes_dec_ctr);
-        t_env.add_filter("INT", to_int);
+        t_env.add_function("INT", to_int);
 
         t_env.add_filter("base64Encode", fake_base64_en);
         t_env.add_filter("AesEcbEnc", aes_enc_ecb);
