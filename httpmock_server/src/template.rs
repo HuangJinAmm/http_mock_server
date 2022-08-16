@@ -9,6 +9,7 @@ use fake::faker::name::en::Name as NameEn;
 use fake::faker::name::zh_cn::Name as NameZh;
 use fake::StringFaker;
 use fake::Fake;
+use rand::seq::SliceRandom;
 use uuid::Uuid;
 
 use crate::aes_tool::{aes_dec_ecb_string, aes_enc_ecb_string, aes_dec_cbc_string, aes_enc_cbc_string, aes_dec_ctr_string, aes_enc_ctr_string};
@@ -45,6 +46,7 @@ lazy_static! {
 
         t_env.add_function("DATE_ADD",fake_date_add);
 
+        t_env.add_function("CHOOSE", choose_in);
 
         t_env.add_function("BASE64_EN",fake_base64_en);
         t_env.add_function("BASE64_DE",fake_base64_de);
@@ -81,6 +83,16 @@ lazy_static! {
 //         .unwrap_or_else(|_s| template.to_string());
 //     Ok(result)
 // }
+
+fn choose_in(_state: &State, value:String)-> Result<String, Error> {
+    let candicate:Vec<&str> = value.split('|').collect();
+    let mut rng = rand::thread_rng();
+    let choosed = candicate.choose(&mut rng);
+    choosed
+        .map(|c|c.to_string())
+        .ok_or_else(|| Error::new(ErrorKind::InvalidArguments, "字符串为空"))
+}
+
 fn to_int(_state: &State, value: String) -> Result<i32, Error> {
     value.parse::<i32>().map_err(|e|Error::new(ErrorKind::InvalidArguments, format!("{}cant turn to int", value)))
 }

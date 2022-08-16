@@ -33,6 +33,8 @@ fn main() {
     // use tracing::Level;
 
     use std::thread;
+
+    use tracing::Level;
     thread::spawn(move ||{
         tokio::runtime::Builder::new_multi_thread().worker_threads(1)
         .enable_all().build().unwrap().block_on(async {

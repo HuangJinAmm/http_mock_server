@@ -58,7 +58,7 @@ impl ValueTarget<Value> for JSONBodyTarget {
         let body_vec = body.unwrap();
         if let Ok(body_str) = String::from_utf8(body_vec.to_owned()) {
             let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
-            let dealed_body = re.replace(&body_str, "");
+            let dealed_body = re.replace_all(&body_str, "");
             match serde_json::from_str(dealed_body.as_ref()) {
                 Ok(v) => {return Some(v)},
                 Err(e) => {

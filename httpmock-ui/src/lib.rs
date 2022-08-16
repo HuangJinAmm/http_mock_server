@@ -14,8 +14,8 @@ lazy_static!{
     pub static ref PORT:String = {
         dotenv::dotenv().ok();
         match std::env::var("MOCK_PORT") {
-            Ok(p) => dbg!(p),
-            Err(_) => dbg!("13001".to_owned()),
+            Ok(p) => p,
+            Err(_) => "13001".to_owned(),
         }
     };
 }

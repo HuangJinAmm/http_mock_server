@@ -14,7 +14,7 @@ lazy_static! {
         tmh.add(TemplateHintInfo::new("IPV6地址".into(), "随机IPV6地址".into(),"{{IPV6()}}".into()));
         tmh.add(TemplateHintInfo::new("MAC地址".into(), "随机MAC地址".into(),"{{MAC()}}".into()));
         tmh.add(TemplateHintInfo::new("UserAgent".into(), "随机UserAgent地址".into(),"{{USERAGENT()}}".into()));
-        tmh.add(TemplateHintInfo::new("PassWord".into(), "随机PassWord地址".into(),"{{PASSWORD()}}".into()));
+        tmh.add(TemplateHintInfo::new("CHOOSE".into(), "从候选(|分开)中任意选一个".into(),"{{CHOOSE('候选1|候选2|候选3...')}}".into()));
         tmh.add(TemplateHintInfo::new("循环模板".into(), 
             "循环语法".into(),
             "{% for x in range(循环次数) %}\n需要循环的数据\n{% endfor %}".into()));
