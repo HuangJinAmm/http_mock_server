@@ -13,7 +13,7 @@ const HIST_LIST_KEY:&[u8] = b"history_list";
 type HistoryRecode = (String,u32);
 
 fn get_db_name(id:u64) -> String {
-    format!("{}/{}/{}", HIST_DB, PORT, id)
+    format!("{}/{}/{}", HIST_DB, PORT.to_string(), id)
 }
 
 pub fn get_history_list(id:u64) -> Vec<HistoryRecode> {

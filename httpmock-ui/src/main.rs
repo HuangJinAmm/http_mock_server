@@ -10,8 +10,7 @@ use app::TemplateApp;
 // use log4rs::{append::{console::ConsoleAppender, file::FileAppender}, encode::pattern::PatternEncoder, Config, config::{Appender, Root, Logger} };
 mod history_db;
 pub mod esay_md;
-
-const PORT:&str = dotenv_codegen::dotenv!("PORT");
+pub use httpmock_ui::PORT;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -27,7 +26,7 @@ fn main() {
 
     // tracing_subscriber::fmt().with_max_level(Level::INFO).with_env_filter("httpmock_ui=debug,httpmock_server=debug").init();
 
-    let path = format!("0.0.0.0:{}", PORT);
+    let path = format!("0.0.0.0:{}", PORT.to_string());
     log::info!("服务器地址：{}",path);
     // use std::thread;
 
@@ -48,7 +47,7 @@ fn main() {
         ..Default::default()
     };
     eframe::run_native(
-        format!("HTTP模拟服务器-端口{}", PORT).as_str(),
+        format!("HTTP模拟服务器-端口{}", PORT.to_string()).as_str(),
         native_options,
         Box::new(|cc| Box::new(TemplateApp::new(cc))),
     );

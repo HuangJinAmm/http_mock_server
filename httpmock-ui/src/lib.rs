@@ -9,8 +9,16 @@ mod history_db;
 pub mod esay_md;
 pub use app::TemplateApp;
 
-pub const PORT:&str = dotenv_codegen::dotenv!("PORT");
 
+lazy_static!{
+    pub static ref PORT:String = {
+        dotenv::dotenv().ok();
+        match std::env::var("MOCK_PORT") {
+            Ok(p) => dbg!(p),
+            Err(_) => dbg!("13001".to_owned()),
+        }
+    };
+}
 // lazy_static!{
 //     static ref RT:Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().worker_threads(4).build().unwrap();
 // }
