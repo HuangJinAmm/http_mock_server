@@ -242,7 +242,7 @@ impl TemplateApp {
         let mut fonts = FontDefinitions::default();
         fonts.font_data.insert(
             "my_font".to_owned(),
-            FontData::from_static(include_bytes!("MI_LanTing_Regular.ttf")),
+            FontData::from_static(include_bytes!("SourceHanSansCN-Regular.otf")),
         );
         fonts
             .families

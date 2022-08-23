@@ -42,6 +42,7 @@ lazy_static! {
         t_env.add_function("NOW", fake_now);
         t_env.add_function("DATE_BEFORE", fake_datetime_before);
         t_env.add_function("DATE_AFTER", fake_datetime_after);
+        t_env.add_function("DATE_BTW", fake_datetime_btw);
         t_env.add_function("DATE",fake_datetime);
 
         t_env.add_function("DATE_ADD",fake_date_add);
@@ -267,6 +268,16 @@ fn fake_date_add(_state: &State<'_, '_>,duration:i64,date:Option<String>,fmt:Opt
     let fake_date = local.checked_add_signed(dura).unwrap();
     let fmt_data =fake_date.format(fmt.as_str());
     Ok(fmt_data.to_string())
+}
+
+fn fake_datetime_btw(_state: &State<'_, '_>,start:String,end:String,fmt:Option<String>) -> Result<String, Error> {
+    let fmt = match fmt {
+        Some(f) => f,
+        None => DEFAULT_FMT.to_owned(),
+    };
+    let start = Utc.datetime_from_str(start.as_str(), fmt.as_str()).expect("开始日期格式不匹配");
+    let end = Utc.datetime_from_str(end.as_str(), fmt.as_str()).expect("结束日期格式不匹配");
+    fake_date_between(_state, fmt.as_str(), start, end)
 }
 
 fn fake_datetime(_state: &State<'_, '_>,fmt:Option<String>) -> Result<String, Error> {
