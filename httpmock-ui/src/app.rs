@@ -191,6 +191,7 @@ impl TemplateApp {
             .iter()
             .filter(|notice| notice.0 + NOTIFICATION_SHOW_TIME > now)
             .for_each(|notice| {
+
                 if let Some(response) = egui::Window::new("通知")
                     .id(egui::Id::new(offset as u32))
                     .default_size(vec2(256.0, 256.0))
@@ -242,7 +243,7 @@ impl TemplateApp {
         let mut fonts = FontDefinitions::default();
         fonts.font_data.insert(
             "my_font".to_owned(),
-            FontData::from_static(include_bytes!("SourceHanSansCN-Regular.otf")),
+            FontData::from_static(include_bytes!("MI_LanTing_Regular.ttf")),
         );
         fonts
             .families
@@ -583,7 +584,7 @@ impl eframe::App for TemplateApp {
         });
 
         if self.is_exiting {
-            egui::SidePanel::right("right_panel").resizable(false).show(ctx, |ui| {
+            egui::SidePanel::right("right_panel").show(ctx, |ui| {
                 ui.label("历史记录");
                 egui::ScrollArea::vertical().show(ui, |ui|{
                     for (ver_name,ver) in self.history.clone() {
