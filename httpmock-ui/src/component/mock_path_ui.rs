@@ -99,7 +99,7 @@ impl MockReturns {
                             cols[2].label("响应码");
                             cols[3].add(egui::DragValue::new(&mut self.code).speed(1));
                         });
-                        self.headers.ui_grid_input(ui, "bbbbbbbbbaxx");
+                        self.headers.ui_grid_input(ui, self.dist_url.as_str());
                         super::highlight::code_editor_ui(ui, &mut self.body, "json");
                     },
                     ReturnType::Relay => {

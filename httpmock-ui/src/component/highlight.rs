@@ -103,7 +103,7 @@ pub fn code_editor_ui(ui: &mut egui::Ui, code: &mut String, language: &str) {
     };
     ui.with_layout(egui::Layout::left_to_right(),|ui|{
 
-    egui::ScrollArea::horizontal()
+    egui::ScrollArea::both()
         .auto_shrink([false, false])
         .id_source("requset_ui_scroller_1")
         .show(ui, |ui| {
