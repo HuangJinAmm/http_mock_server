@@ -238,7 +238,7 @@ pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServer
 
     if handler_wrap.is_empty() {
         log::info!("未找到对应的配置");
-        return Err(Error::from_string("未找到相应的配置",StatusCode::NOT_FOUND));
+        return Err(Error::from_string("未匹配到模拟数据",StatusCode::NOT_FOUND));
     }
     let mut all_mis_matches = Vec::new();
     for mut hander_w in handler_wrap {
@@ -256,7 +256,11 @@ pub async fn handle_mock_requset(req: &mut HttpMockRequest) -> Result<MockServer
         log::info!("服务器未返回任何数据");
         return Err(Error::from_string("服务器未返回任何数据",StatusCode::INTERNAL_SERVER_ERROR));
     } else {
-        let resp = serde_json::to_string_pretty(&all_mis_matches).unwrap();
+        let mut mis_reason = Vec::new();
+        for m in all_mis_matches {
+            mis_reason.push(m.title); 
+        }
+        let resp = serde_json::to_string_pretty(&mis_reason).unwrap();
         log::info!("匹配失败:{}",&resp);
         let not_found = Error::from_string(resp,StatusCode::BAD_REQUEST);
         return Err(not_found);
