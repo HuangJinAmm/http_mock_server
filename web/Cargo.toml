@@ -6,7 +6,7 @@ edition = "2021"
 rust-version = "1.65"
 
 [features]
-# default = ["syntect"]
+default = []
 syntect = ["dep:syntect"]
 
 [dependencies]
