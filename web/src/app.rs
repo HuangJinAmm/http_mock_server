@@ -1,17 +1,18 @@
+use crate::history_db::add_new_version_mockinfo;
 use crate::{
-    api_context::{ ApiContext },
+    api_context::ApiContext,
     component::tree_ui::{self, TreeUi},
-    request_data::{covert_to_ui, PreHttpTest, PreRequest, PreResponse, RequestData, ResponseData, MockData},
+    request_data::{
+        covert_to_ui, MockData, PreHttpTest, PreRequest, PreResponse, RequestData, ResponseData,
+    },
     utils::{
+        rhai_script::SCRIPT_ENGINE,
         // rhai_script::ScriptEngine,
-        template::add_global_var, rhai_script::SCRIPT_ENGINE,
+        template::add_global_var,
     },
 };
 use chrono::Local;
-use egui::{
-    global_dark_light_mode_switch, Color32, FontData, FontDefinitions, Frame, Id,
-    Window,
-};
+use egui::{global_dark_light_mode_switch, Color32, FontData, FontDefinitions, Frame, Id, Window};
 use egui_dock::{DockArea, Style, Tree};
 use egui_file::{DialogType, FileDialog};
 use egui_notify::Toasts;
@@ -22,8 +23,9 @@ use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
 use reqwest::{Client, Request};
 use rhai::Scope;
-use std::time::Duration;
+use server::common::{mock::MockDefine, MOCK_SERVER};
 use std::thread;
+use std::time::Duration;
 use std::{io::BufReader, sync::Mutex};
 use std::{path::PathBuf, sync::Arc};
 use tokio::{
@@ -87,7 +89,7 @@ pub struct TemplateApp {
 impl Default for TemplateApp {
     fn default() -> Self {
         let mut api_context = ApiContext::new();
-        api_context.insert_collecton(0,"".to_owned());
+        api_context.insert_collecton(0, "".to_owned());
         Self {
             show_log: false,
             test: "".to_owned(),
@@ -176,7 +178,6 @@ impl TemplateApp {
         }
         true
     }
-
 }
 
 impl eframe::App for TemplateApp {
@@ -327,10 +328,17 @@ impl eframe::App for TemplateApp {
                             //ignore
                         }
                         tree_ui::Action::Delete(dels) => {
-                            for del_id in dels {
-                                info!("删除{}", del_id);
-                                self.api_data.delete_collecton(del_id);
-                                self.api_data.delete_test(del_id);
+                            if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                                for del_id in dels {
+                                    info!("删除{}", del_id);
+                                    self.api_data.delete_collecton(del_id);
+                                    if let Some(mock_define) = self.api_data.delete_test(del_id) {
+                                        let mock: MockDefine = mock_define.into();
+                                        mock_server.delete(mock)
+                                    }
+                                }
+                            } else {
+                                info!("删除失败，请稍后再试");
                             }
                         }
                         tree_ui::Action::Add((adds, node_type)) => {
@@ -338,11 +346,10 @@ impl eframe::App for TemplateApp {
                             info!("添加{},{:?}", &add_id, &node_type);
                             match node_type {
                                 tree_ui::NodeType::Collection => {
-                                    self.api_data
-                                        .insert_collecton(add_id,"".to_string());
+                                    self.api_data.insert_collecton(add_id, "".to_string());
                                 }
                                 tree_ui::NodeType::Node => {
-                                    self.api_data.insert_test(add_id,MockData::default());
+                                    self.api_data.insert_test(add_id, MockData::default());
                                 }
                             }
                         }
@@ -376,18 +383,44 @@ impl eframe::App for TemplateApp {
                                 }
                             }
                         }
-                        tree_ui::Action::SyncToServer((id,active)) => {
-                            dbg!(id,active);
-                            let msg = if active {
-                                format!("已更新配置{}", id)
+                        tree_ui::Action::SyncToServer((id, active)) => {
+                            let mut msg = String::new();
+                            if active {
+                                if let Some(mockdata) = self.api_data.tests.get(&id) {
+                                    if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                                        let mut mock: MockDefine = mockdata.clone().into();
+                                        mock.id = id;
+                                        if mock.req.path.is_empty() || mock.resp.body.is_none() {
+                                            msg = "添加失败：路径或者响应为空".to_owned();
+                                        } else {
+                                            msg = match mock_server.add(mock) {
+                                                Ok(_) => {
+                                                    add_new_version_mockinfo(id, mockdata);
+                                                    format!("已更新配置{}", id)
+                                                }
+                                                Err(e) => {
+                                                    // self..disable_item(id);
+                                                    e
+                                                }
+                                            };
+                                        }
+                                    }
+                                }
                             } else {
-                                format!("已取消配置{}", id)
+                                if let Some(mockdata) = self.api_data.tests.get(&id) {
+                                    if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                                        let mut mock: MockDefine = mockdata.clone().into();
+                                        mock.id = id;
+                                        mock_server.delete(mock);
+                                        msg = format!("已取消配置{}", id)
+                                    } else {
+                                        msg = format!("删除失败！获取锁失败{}", id);
+                                    }
+                                }
                             };
-                            
+
                             if let Ok(mut toast_w) = toast.lock() {
-                                toast_w
-                                    .info(msg)
-                                    .set_duration(Some(Duration::from_secs(5)));
+                                toast_w.info(msg).set_duration(Some(Duration::from_secs(5)));
                             }
                         }
                     }
@@ -407,6 +440,5 @@ impl eframe::App for TemplateApp {
                     .style(dst)
                     .show_inside(ui, &mut self.api_data);
             });
-
     }
 }

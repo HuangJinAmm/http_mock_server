@@ -362,13 +362,13 @@ pub struct PreResponse {
     pub code: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Default,Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Default, Clone)]
 pub struct MockData {
     pub req: ReqMockData,
     pub resp: RspMockData,
 }
 
-#[derive(serde::Serialize, serde::Deserialize,Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct ReqMockData {
     pub remark: String,
     pub path: String,
@@ -389,7 +389,7 @@ impl Default for ReqMockData {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Default,Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Default, Clone)]
 pub struct RspMockData {
     pub is_proxy: bool,
     pub dist_url: String,

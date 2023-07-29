@@ -1,21 +1,25 @@
-use std::{sync::Arc, path::{Path, PathBuf}, fs};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sled::{Db, IVec};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use crate::request_data::MockData;
 use crate::PORT;
 
-const HIST_DB:&str = "history";
-const HIST_LIST_KEY:&[u8] = b"history_list";
+const HIST_DB: &str = "history";
+const HIST_LIST_KEY: &[u8] = b"history_list";
 
-type HistoryRecode = (String,u32);
+type HistoryRecode = (String, u32);
 
-fn get_db_name(id:u64) -> String {
+fn get_db_name(id: u64) -> String {
     format!("{}/{}/{}", HIST_DB, *PORT, id)
 }
 
-pub fn get_history_list(id:u64) -> Vec<HistoryRecode> {
+pub fn get_history_list(id: u64) -> Vec<HistoryRecode> {
     let mut res = Vec::new();
     if let Ok(db) = sled::open(get_db_name(id)) {
         if let Some(db_res) = db.get(HIST_LIST_KEY).unwrap() {
@@ -25,20 +29,20 @@ pub fn get_history_list(id:u64) -> Vec<HistoryRecode> {
     res
 }
 
-pub fn get_mock(id:u64,versoin:u32) -> Option<MockData> {
+pub fn get_mock(id: u64, versoin: u32) -> Option<MockData> {
     if let Ok(db) = sled::open(get_db_name(id)) {
         if let Some(res_ivec) = db.get(key_to_ivec(versoin)).unwrap() {
-            let res_obj :MockData = convert_to_obj(res_ivec);
+            let res_obj: MockData = convert_to_obj(res_ivec);
             return Some(res_obj);
         }
     }
     None
 }
 
-pub fn add_new_version_mockinfo(id:u64,mock_info:&MockData) {
+pub fn add_new_version_mockinfo(id: u64, mock_info: &MockData) {
     if let Ok(db) = sled::open(get_db_name(id)) {
-        let mut last_id=0;
-        let mut history_list:Vec<HistoryRecode> = Vec::new();
+        let mut last_id = 0;
+        let mut history_list: Vec<HistoryRecode> = Vec::new();
         if let Some(db_res) = db.get(HIST_LIST_KEY).unwrap() {
             history_list = convert_to_obj(db_res);
             if let Some(item) = history_list.last() {
@@ -47,33 +51,32 @@ pub fn add_new_version_mockinfo(id:u64,mock_info:&MockData) {
         }
         let now = chrono::Local::now();
         let now = now.format("%Y-%m-%dT%H:%M:%S").to_string();
-        history_list.push((now,last_id));
-        let _res:Result<(), sled::transaction::TransactionError<String>>= db.transaction(|tx_db|{
-            let val = convert_to_IVec(mock_info);
-            tx_db.insert(HIST_LIST_KEY,convert_to_IVec(&history_list))?;
-            tx_db.insert(key_to_ivec(last_id),val)?;
-            Ok(())
-        });
+        history_list.push((now, last_id));
+        let _res: Result<(), sled::transaction::TransactionError<String>> =
+            db.transaction(|tx_db| {
+                let val = convert_to_IVec(mock_info);
+                tx_db.insert(HIST_LIST_KEY, convert_to_IVec(&history_list))?;
+                tx_db.insert(key_to_ivec(last_id), val)?;
+                Ok(())
+            });
     }
 }
 
-
-
-fn decompose_key(key:IVec) ->Option<(u64,u32)> {
+fn decompose_key(key: IVec) -> Option<(u64, u32)> {
     if key.len() >= 12 {
-        let (id,ver) = key.split_at(8);
-        let id:[u8;8] = id.try_into().unwrap();
+        let (id, ver) = key.split_at(8);
+        let id: [u8; 8] = id.try_into().unwrap();
         let id = u64::from_be_bytes(id);
 
-        let ver:[u8;4] = ver.try_into().unwrap();
+        let ver: [u8; 4] = ver.try_into().unwrap();
         let ver = u32::from_be_bytes(ver);
-        Some((id,ver))
+        Some((id, ver))
     } else {
         None
     }
 }
 
-fn convert_to_IVec<T>(obj:&T) ->IVec 
+fn convert_to_IVec<T>(obj: &T) -> IVec
 where
     T: ?Sized + Serialize,
 {
@@ -81,44 +84,44 @@ where
     IVec::from(val)
 }
 
-fn convert_to_obj<T>(v:IVec) -> T 
+fn convert_to_obj<T>(v: IVec) -> T
 where
-    for<'de> T: Deserialize<'de>
+    for<'de> T: Deserialize<'de>,
 {
-    let v= v.to_vec();
+    let v = v.to_vec();
     // let val:Value = serde_json::from_slice(v.as_slice()).unwrap();
     // let obj:T = serde_json::from_value(val).unwrap();
     // obj
-    let obj:T = serde_json::from_slice(v.as_slice()).unwrap();
+    let obj: T = serde_json::from_slice(v.as_slice()).unwrap();
     obj
 }
 
-fn convert_ivec_to_mock(v:IVec) -> MockData {
+fn convert_ivec_to_mock(v: IVec) -> MockData {
     let v = v.to_vec();
     let obj = serde_json::from_slice::<MockData>(v.as_slice()).unwrap();
     obj
 }
 
-fn iver_to_key(v:IVec) -> u32 {
+fn iver_to_key(v: IVec) -> u32 {
     let vec = v.to_vec();
-    let ver:[u8;4] = vec.try_into().unwrap();
+    let ver: [u8; 4] = vec.try_into().unwrap();
     let ver = u32::from_be_bytes(ver);
     ver
 }
 
-fn key_to_ivec(versoin:u32) -> IVec {
+fn key_to_ivec(versoin: u32) -> IVec {
     let vb = versoin.to_be_bytes();
     vb.as_slice().into()
 }
-fn compose_key(id:i64,versoin:i32) -> [u8;12] {
-    let mut key = [0;12];
+fn compose_key(id: i64, versoin: i32) -> [u8; 12] {
+    let mut key = [0; 12];
     let idb = id.to_be_bytes();
     let vb = versoin.to_be_bytes();
     for i in 0..8 {
         key[i] = idb[i];
     }
     for i in 8..12 {
-        key[i] = vb[i-8];
+        key[i] = vb[i - 8];
     }
     key
 }
@@ -128,24 +131,24 @@ mod tests {
 
     use sled::IVec;
 
-
     use crate::request_data::MockData;
 
-    use super::{add_new_version_mockinfo, compose_key, get_history_list, get_mock, key_to_ivec, iver_to_key};
-
+    use super::{
+        add_new_version_mockinfo, compose_key, get_history_list, get_mock, iver_to_key, key_to_ivec,
+    };
 
     #[test]
     fn test_add_mockinfo() {
         let mut v = MockData::default();
         for i in 0..100 {
-            v.req.remark = i.to_string(); 
+            v.req.remark = i.to_string();
             add_new_version_mockinfo(101, &v);
         }
     }
 
     #[test]
     fn test_get_mockinfo() {
-        // dbg!(get_mock(101, 12)); 
+        // dbg!(get_mock(101, 12));
     }
 
     #[test]
@@ -169,30 +172,29 @@ mod tests {
     #[test]
     fn test_convert() {
         let v = 0u32;
-        let v_ivec = dbg!(key_to_ivec(v)); 
+        let v_ivec = dbg!(key_to_ivec(v));
         let vv = dbg!(iver_to_key(v_ivec));
-        assert_eq!(v,vv);
+        assert_eq!(v, vv);
     }
 
     #[test]
     fn test_get() {
-        
         if let Ok(db) = sled::open("100") {
             let k1 = 100i32;
             let k = k1.to_be_bytes();
             let v = db.get(k).unwrap().unwrap();
             let v = v.to_vec();
-            let m:MockData= serde_json::from_slice(v.as_slice()).unwrap();
+            let m: MockData = serde_json::from_slice(v.as_slice()).unwrap();
         }
     }
 
     #[test]
     fn test_prefix() {
-        let k = 100i64; 
+        let k = 100i64;
         let kb = k.to_be_bytes();
         if let Ok(db) = sled::open("100") {
             let red = db.scan_prefix(kb);
-            println!("{}",red.count());
+            println!("{}", red.count());
             // for item in red {
             //     let (key_v,val_v) = item.unwrap();
             //     let (id,ver) = decompose_key(key_v).unwrap();

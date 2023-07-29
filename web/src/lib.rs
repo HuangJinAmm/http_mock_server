@@ -3,9 +3,9 @@
 pub mod api_context;
 mod app;
 pub mod component;
+pub mod history_db;
 pub mod request_data;
 pub mod ui;
-pub mod history_db;
 pub mod utils;
 pub use app::TemplateApp;
 use once_cell::sync::Lazy;

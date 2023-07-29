@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap };
+use std::collections::BTreeMap;
 
 use crate::history_db::{get_history_list, get_mock};
 use crate::request_data::MockData;
@@ -17,7 +17,7 @@ pub struct ApiContext {
     #[serde(skip)]
     rsq_ui: ResponseUi,
     #[serde(skip)]
-    docs_ui:CollectionUi,
+    docs_ui: CollectionUi,
 }
 impl TabViewer for ApiContext {
     type Tab = String;
@@ -37,22 +37,22 @@ impl TabViewer for ApiContext {
             }
             "文档" => {
                 if let Some(req_data) = self.tests.get_mut(&selected) {
-                    self.docs_ui.ui(ui, &mut req_data.req.remark, selected);                
+                    self.docs_ui.ui(ui, &mut req_data.req.remark, selected);
                 }
                 if let Some(req_data) = self.docs.get_mut(&selected) {
                     self.docs_ui.ui(ui, req_data, selected);
                 }
             }
             "记录" => {
-                let hist_list = get_history_list(selected); 
-                egui::ScrollArea::vertical().show(ui, |ui|{
-                    for (ver_name,ver) in hist_list {
-                        ui.horizontal(|ui|{
+                let hist_list = get_history_list(selected);
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for (ver_name, ver) in hist_list {
+                        ui.horizontal(|ui| {
                             ui.label(ver.to_string());
                             if ui.button(ver_name).clicked() {
                                 if let Some(mock) = get_mock(selected, ver) {
-                                    let mut recode = self.tests.get_mut(selected).unwrap();
-                                    recode = mock;
+                                    let recode = self.tests.get_mut(&selected).unwrap();
+                                    *recode = mock;
                                 }
                             }
                         });

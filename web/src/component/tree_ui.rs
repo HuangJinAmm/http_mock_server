@@ -258,7 +258,6 @@ impl TreeUi {
                 }
                 other => other,
             };
-        
 
         match (popup_resp, sub_resp) {
             (None, sub) => sub,

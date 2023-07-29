@@ -7,16 +7,20 @@ fn main() -> eframe::Result<()> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     // tracing_subscriber::fmt::init();
     let path = format!("0.0.0.0:{}", PORT.to_string());
-    log::info!("服务器地址：{}",path);
+    log::info!("服务器地址：{}", path);
 
     use std::thread;
 
-    thread::spawn(move ||{
-        tokio::runtime::Builder::new_multi_thread().worker_threads(1)
-        .enable_all().build().unwrap().block_on(async {
-            log::info!("启动....");
-            let _ = server::serve(path.as_str()).await;
-        });
+    thread::spawn(move || {
+        tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                log::info!("启动....");
+                let _ = server::serve(path.as_str()).await;
+            });
     });
     use eframe::IconData;
     use eframe_template::PORT;
