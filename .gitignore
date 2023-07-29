@@ -3,3 +3,11 @@ httpmock-ui/app_mock*.json
 *.drawio
 /*/history
 /log
+.idea/.gitignore
+.idea/$PRODUCT_WORKSPACE_FILE$
+.idea/dbnavigator.xml
+.idea/http_mock_server.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/codeStyles/Project.xml
