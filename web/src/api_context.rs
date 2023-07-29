@@ -50,9 +50,9 @@ impl TabViewer for ApiContext {
                         ui.horizontal(|ui|{
                             ui.label(ver.to_string());
                             if ui.button(ver_name).clicked() {
-                                if let Some(mock) = get_mock(self.list_selected, ver) {
-                                    let mut recode = self.records.get_mut(&self.list_selected).unwrap();
-                                    recode.mock_define_info = mock;
+                                if let Some(mock) = get_mock(selected, ver) {
+                                    let mut recode = self.tests.get_mut(selected).unwrap();
+                                    recode = mock;
                                 }
                             }
                         });
