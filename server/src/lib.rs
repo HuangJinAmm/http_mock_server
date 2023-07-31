@@ -10,9 +10,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-#[macro_use]
-extern crate lazy_static;
-
 use common::{
     data::{HttpMockRequest, MockServerHttpResponse},
 };

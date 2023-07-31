@@ -1,3 +1,4 @@
+use log::error;
 use poem::http::{HeaderMap, HeaderValue};
 use poem::web::IntoResponse;
 use poem::{FromRequest, Request, RequestBody, Result};
@@ -65,6 +66,7 @@ impl Into<reqwest::Request> for HttpMockRequest {
         let url;
         if let Some(query) = query_params {
             if query.is_empty() {
+                dbg!(&path);
                 url = Url::parse(path.as_str()).unwrap();
             } else {
                 url = Url::parse_with_params(path.as_str(), query.iter()).unwrap();

@@ -24,6 +24,9 @@ impl JSONRegexMatchComparator {
 }
 
 fn match_string_regex(regex:&str,value:&str) -> bool {
+    if regex == "*" {
+        return true;
+    }
     if let Ok(re) = Regex::new(regex) {
         re.is_match(value)
     } else {

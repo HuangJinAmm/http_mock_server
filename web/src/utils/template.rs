@@ -352,7 +352,7 @@ fn fake_date_add(
 mod tests {
 
     use chrono::{DateTime, Local, TimeZone, Utc};
-    use rhai::Engine;
+    // use rhai::Engine;
     // use nom::bytes::complete::is_not;
     // use nom::{
     //     // see the "streaming/complete" paragraph lower for an explanation of these submodules
@@ -485,21 +485,21 @@ mod tests {
         println!("{}", s);
     }
 
-    #[test]
-    fn test_script() {
-        fn fake_name_test() -> String {
-            let name = NameZh().fake();
-            name
-        }
+    // #[test]
+    // fn test_script() {
+    //     fn fake_name_test() -> String {
+    //         let name = NameZh().fake();
+    //         name
+    //     }
 
-        let mut engine = Engine::new();
+    //     let mut engine = Engine::new();
 
-        engine.register_fn("add", fake_name_test);
+    //     engine.register_fn("add", fake_name_test);
 
-        let result = engine.eval::<String>("add()").unwrap();
+    //     let result = engine.eval::<String>("add()").unwrap();
 
-        println!("Answer: {result}"); // prints 42
-    }
+    //     println!("Answer: {result}"); // prints 42
+    // }
 
     // #[test]
     // fn test_python_vm() {

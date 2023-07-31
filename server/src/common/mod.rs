@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     sync::{Arc,RwLock}, borrow::BorrowMut,
 };
+use once_cell::sync::Lazy;
 use poem::Result;
 use poem::error::Error;
 use reqwest::StatusCode;
@@ -23,13 +24,11 @@ pub mod mock;
 pub mod radix_tree;
 // pub mod util;
 
-lazy_static! {
-    pub static ref MOCK_SERVER: Arc<RwLock<MockServer>> = {
-
+pub static MOCK_SERVER: Lazy<Arc<RwLock<MockServer>>> = Lazy::new(||{
         let server = Arc::new(RwLock::new(MockServer::new()));
         server
-    };
-    pub static ref FILTERS: Arc<RequestFilter> = 
+    });
+pub static FILTERS: Lazy<Arc<RequestFilter>> = Lazy::new(||{ 
             Arc::new(RequestFilter {
                 mathcher: vec![
                     //方法
@@ -75,8 +74,8 @@ lazy_static! {
                         diff_with: Some(Tokenizer::Word),
                     }),
                 ],
-            });
-}
+            })
+        });
 pub struct MockServer{
     handler_dispatch: Arc<RwLock<RadixTree<Vec<u64>>>>,
     handlers: Arc<RwLock<HashMap<u64, MockDefine>>>,
@@ -109,22 +108,22 @@ impl MockServer {
             let temp_str = String::from_utf8(template).unwrap();
             if let Ok(mut lock) = TEMP_ENV.write() {
                 let env = lock.borrow_mut();
-                let mut source = env.source().unwrap().clone();
+                // let mut source = env.source().unwrap().clone();
 
                 //添加header的值到模板
-                if let Some(headers) = mock.resp.headers.as_ref() {
-                    for (key,val) in headers {
-                        if val.contains("{{") && val.contains("}}") {
-                            let header_key = format!("{}_header_{}", id, key);
-                            source.add_template(header_key, val).map_err(|e| e.to_string())?;
-                        }
-                    }
-                }
+                // if let Some(headers) = mock.resp.headers.as_ref() {
+                //     for (key,val) in headers {
+                //         if val.contains("{{") && val.contains("}}") {
+                //             let header_key = format!("{}_header_{}", id, key);
+                //             source.add_template(header_key, val).map_err(|e| e.to_string())?;
+                //         }
+                //     }
+                // }
 
                 //添加body到模板
-                let body_temp_key = id.to_string() + "_body";
-                let _add_result = source.add_template(body_temp_key.as_str(), temp_str).map_err(|e| e.to_string())?;
-                env.set_source(source);
+                // let body_temp_key = id.to_string() + "_body";
+                // let _add_result = source.add_template(body_temp_key.as_str(), temp_str).map_err(|e| e.to_string())?;
+                // env.set_source(source);
                 let url = mock.get_url();
                 server.insert(id, mock.to_owned());
 

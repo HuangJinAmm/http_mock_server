@@ -2,29 +2,18 @@ use crate::history_db::add_new_version_mockinfo;
 use crate::{
     api_context::ApiContext,
     component::tree_ui::{self, TreeUi},
-    request_data::{
-        covert_to_ui, MockData, PreHttpTest, PreRequest, PreResponse, RequestData, ResponseData,
-    },
-    utils::{
-        rhai_script::SCRIPT_ENGINE,
-        // rhai_script::ScriptEngine,
-        template::add_global_var,
-    },
+    request_data::{MockData, RequestData, ResponseData},
 };
-use chrono::Local;
 use egui::{global_dark_light_mode_switch, Color32, FontData, FontDefinitions, Frame, Id, Window};
 use egui_dock::{DockArea, Style, Tree};
 use egui_file::{DialogType, FileDialog};
 use egui_notify::Toasts;
-use futures::StreamExt;
 use log::info;
-use minijinja::value::Value as JValue;
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
 use reqwest::{Client, Request};
-use rhai::Scope;
+// use rhai::Scope;
 use server::common::{mock::MockDefine, MOCK_SERVER};
-use std::thread;
 use std::time::Duration;
 use std::{io::BufReader, sync::Mutex};
 use std::{path::PathBuf, sync::Arc};
@@ -36,6 +25,7 @@ use tokio::{
  * 全局变量
  */
 const TEMP_GLOBAL_KEY: &str = "PRE_HTTP";
+const APP_KEY: &str = "egui-http-mock-server";
 
 static TABS: OnceCell<Vec<String>> = OnceCell::new();
 pub static REQ_UI_ID: OnceCell<Id> = OnceCell::new();
@@ -135,7 +125,7 @@ impl TemplateApp {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            let app = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+            let app = eframe::get_value(storage, APP_KEY).unwrap_or_default();
             return app;
         }
         TemplateApp::default()
@@ -183,7 +173,7 @@ impl TemplateApp {
 impl eframe::App for TemplateApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+        eframe::set_value(storage, APP_KEY, self);
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
@@ -194,11 +184,11 @@ impl eframe::App for TemplateApp {
         // Tip: a good default choice is to just keep the `CentralPanel`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        // if ctx.style().visuals.dark_mode {
-        //     catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
-        // } else {
-        //     catppuccin_egui::set_theme(&ctx, catppuccin_egui::LATTE);
-        // }
+        if ctx.style().visuals.dark_mode {
+            catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
+            // } else {
+            //     catppuccin_egui::set_theme(&ctx, catppuccin_egui::LATTE);
+        }
         let toast = TOASTS.get_or_init(|| {
             Arc::new(Mutex::new(
                 Toasts::default().with_anchor(egui_notify::Anchor::BottomRight),
@@ -419,8 +409,13 @@ impl eframe::App for TemplateApp {
                                 }
                             };
 
-                            if let Ok(mut toast_w) = toast.lock() {
-                                toast_w.info(msg).set_duration(Some(Duration::from_secs(5)));
+                            match toast.lock() {
+                                Ok(mut toast_w) => {
+                                    toast_w.info(msg).set_duration(Some(Duration::from_secs(5)));
+                                }
+                                Err(e) => {
+                                    info!("{}", e.to_string())
+                                }
                             }
                         }
                     }
@@ -440,5 +435,9 @@ impl eframe::App for TemplateApp {
                     .style(dst)
                     .show_inside(ui, &mut self.api_data);
             });
+
+        if let Ok(mut toast_w) = toast.lock() {
+            toast_w.show(ctx);
+        }
     }
 }

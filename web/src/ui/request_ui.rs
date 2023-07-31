@@ -35,8 +35,6 @@ impl RequestUi {
             headers,
             body,
         } = request_data;
-        let ui_id = REQ_UI_ID.get_or_init(|| ui.id());
-        let req_id = ui_id.with(id);
 
         ui.vertical(|ui| {
             ui.add(editable_label(remark));
@@ -91,11 +89,6 @@ impl RequestUi {
                         HeaderUi::ui_grid_input(ui, "request_body_grid_1", headers);
                     });
 
-                    let state_id = ui.id().with(id.to_string() + "body");
-                    let (mut show_plaintext, mut template_str) = ui.data(|d| {
-                        d.get_temp::<(bool, String)>(state_id)
-                            .unwrap_or((false, "".to_string()))
-                    });
                     ui.horizontal(|ui| {
                         ui.label("请求体：");
                     });
@@ -105,10 +98,17 @@ impl RequestUi {
     }
 }
 
-#[derive(Default)]
 pub struct CollectionUi {
     script_editor: TextEdit,
     cache: CommonMarkCache,
+}
+impl Default for CollectionUi {
+    fn default() -> Self {
+        Self {
+            script_editor: TextEdit::new("md"),
+            cache: Default::default(),
+        }
+    }
 }
 
 impl CollectionUi {
@@ -141,8 +141,6 @@ pub struct ResponseUi {
 impl ResponseUi {
     pub fn ui(&mut self, ui: &mut egui::Ui, data: &mut RspMockData, id: u64) {
         let req_id = ui.id().with(id).with("resp");
-        let ui_id = REQ_UI_ID.get_or_init(|| ui.id());
-        let req_id = ui_id.with(id);
         let (mut view_state, mut template_str) = ui.data_mut(|d| {
             d.get_temp::<(bool, String)>(req_id)
                 .unwrap_or((false, "".to_owned()))
@@ -160,113 +158,8 @@ impl ResponseUi {
                 egui::ScrollArea::both()
                     .id_source("respone_ui_scroller_1")
                     .show(ui, |ui| {
-                        // ui.set_min_size(ui.available_size());
+                        ui.toggle_value(is_proxy, "转发");
                         ui.add_enabled_ui(*is_proxy, |ui| {
-                            ui.columns(4, |cols| {
-                                cols[0].label("延时（ms）");
-                                cols[1].add(egui::DragValue::new(delay).speed(1));
-                                cols[2].label("响应码");
-                                cols[3].add(egui::DragValue::new(code).speed(1));
-                            });
-                            ui.with_layout(
-                                egui::Layout::top_down_justified(egui::Align::LEFT),
-                                |ui| {
-                                    ui.collapsing("响应头", |ui| {
-                                        HeaderUi::ui_grid_input(ui, "response_grid_ui_1", headers);
-                                    });
-                                    if view_state {
-                                        if ui.button("🔃").clicked() {
-                                            if view_state {
-                                                match rander_template(body.as_str()) {
-                                                    Ok(parsed_temp) => template_str = parsed_temp,
-                                                    Err(e) => {
-                                                        if let Ok(mut toast_w) =
-                                                            TOASTS.get().unwrap().lock()
-                                                        {
-                                                            toast_w.error(e.to_string().as_str());
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        ui.add_space(29.0);
-                                    }
-                                    if ui.toggle_value(&mut view_state, "预览").clicked() {
-                                        if view_state {
-                                            let task_sender = unsafe { TASK_CHANNEL.0.clone() };
-                                            TOKIO_RT.spawn(async move {
-                                                if let Err(_) = task_sender.send((id, 0, 0)).await {
-                                                    log::info!("receiver dropped");
-                                                    return;
-                                                }
-                                            });
-                                            let deal_temp = match rander_template(&body) {
-                                                Ok(parsed_temp) => parsed_temp,
-                                                Err(e) => {
-                                                    let mut msg = "模板语法错误：".to_string();
-                                                    msg.push_str(e.to_string().as_str());
-                                                    if let Ok(mut toast_w) =
-                                                        TOASTS.get().unwrap().lock()
-                                                    {
-                                                        toast_w.error(e.to_string().as_str());
-                                                    }
-                                                    body.clone()
-                                                }
-                                            };
-                                            template_str =
-                                                match json5::from_str::<Value>(&deal_temp) {
-                                                    Ok(json_body) => {
-                                                        serde_json::to_string_pretty(&json_body)
-                                                            .unwrap_or(body.clone())
-                                                    }
-                                                    Err(_) => body.clone(),
-                                                };
-                                        }
-                                    }
-                                    if ui.button("格式化JSON").clicked() {
-                                        let unfmt_json = body.clone();
-
-                                        let f = json5format::Json5Format::new().unwrap();
-                                        match json5format::ParsedDocument::from_str(
-                                            &unfmt_json,
-                                            None,
-                                        ) {
-                                            Ok(d) => match f.to_string(&d) {
-                                                Ok(s) => {
-                                                    *body = s;
-                                                }
-                                                Err(se) => {
-                                                    if let Ok(mut toast_w) =
-                                                        TOASTS.get().unwrap().lock()
-                                                    {
-                                                        toast_w.error(se.to_string().as_str());
-                                                    }
-                                                }
-                                            },
-                                            Err(e) => {
-                                                if let Ok(mut toast_w) =
-                                                    TOASTS.get().unwrap().lock()
-                                                {
-                                                    toast_w.error(e.to_string().as_str());
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if view_state {
-                                        self.editor.ui(ui, body, id);
-                                    } else {
-                                        code_view_ui(ui, &body, "json");
-                                    }
-                                    ui.data_mut(|data| {
-                                        data.insert_temp(req_id, (view_state, template_str))
-                                    });
-                                },
-                            )
-                        });
-
-                        ui.add_enabled_ui(!*is_proxy, |ui| {
                             ui.columns(2, |cols| {
                                 cols[0].label("转发服务器地址");
                                 cols[1].add(
@@ -275,6 +168,139 @@ impl ResponseUi {
                                 );
                             });
                         });
+                        ui.separator();
+                        // ui.set_min_size(ui.available_size());
+                        ui.add_enabled_ui(!*is_proxy, |ui| {
+                            ui.columns(4, |cols| {
+                                cols[0].label("延时（ms）");
+                                cols[1].add(egui::DragValue::new(delay).speed(1));
+                                cols[2].label("响应码");
+                                cols[3].add(egui::DragValue::new(code).speed(1));
+                            });
+
+                            let id_source = ui.make_persistent_id("mock_test_response_head");
+                            egui::collapsing_header::CollapsingState::load_with_default_open(
+                                ui.ctx(),
+                                id_source,
+                                false,
+                            )
+                            .show_header(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label("响应头");
+                                    let add_header = ui.small_button("➕");
+                                    let del_header = ui.small_button("➖");
+                                    if add_header.clicked() {
+                                        headers.push(SelectKeyValueItem::new("", ""));
+                                    }
+                                    if del_header.clicked() {
+                                        let new_headers: Vec<SelectKeyValueItem> = headers
+                                            .clone()
+                                            .into_iter()
+                                            .filter(|item| item.selected)
+                                            .collect();
+                                        *headers = new_headers;
+                                    }
+                                });
+                            })
+                            .body(|ui| {
+                                HeaderUi::ui_grid_input(ui, "response_grid_ui_1", headers);
+                            });
+
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+                                if view_state {
+                                    if ui.button("🔃").clicked() {
+                                        if view_state {
+                                            match rander_template(body.as_str()) {
+                                                Ok(parsed_temp) => template_str = parsed_temp,
+                                                Err(e) => {
+                                                    if let Ok(mut toast_w) =
+                                                        TOASTS.get().unwrap().lock()
+                                                    {
+                                                        toast_w.error(e.to_string().as_str());
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    ui.add_space(29.0);
+                                }
+                                if ui.toggle_value(&mut view_state, "预览").clicked() {
+                                    if view_state {
+                                        let task_sender = unsafe { TASK_CHANNEL.0.clone() };
+                                        TOKIO_RT.spawn(async move {
+                                            if let Err(_) = task_sender.send((id, 0, 0)).await {
+                                                log::debug!("receiver dropped");
+                                                return;
+                                            }
+                                        });
+                                        log::debug!("body:{}",&body);
+                                        let deal_temp = match rander_template(&body) {
+                                            Ok(parsed_temp) => parsed_temp,
+                                            Err(e) => {
+                                                let mut msg = "模板语法错误：".to_string();
+                                                msg.push_str(e.to_string().as_str());
+                                                if let Ok(mut toast_w) =
+                                                    TOASTS.get().unwrap().lock()
+                                                {
+                                                    toast_w.error(e.to_string().as_str());
+                                                }
+                                                body.clone()
+                                            }
+                                        };
+                                        log::debug!("渲染:{}",&deal_temp);
+                                        template_str = match json5::from_str::<Value>(&deal_temp) {
+                                            Ok(json_body) => {
+                                                log::debug!("渲染:{:?}",&json_body);
+                                                match serde_json::to_string_pretty(&json_body) {
+                                                    Ok(s) => {s},
+                                                    Err(e) => {
+                                                        log::error!("渲染错误{}",e.to_string());
+                                                        body.clone()
+                                                    },
+                                                }
+                                            }
+                                            Err(e) => {
+                                                log::error!("{}",e.to_string());
+                                                body.clone()
+                                            },
+                                        };
+                                    }
+                                }
+                                if ui.button("格式化JSON").clicked() {
+                                    let unfmt_json = body.clone();
+
+                                    let f = json5format::Json5Format::new().unwrap();
+                                    match json5format::ParsedDocument::from_str(&unfmt_json, None) {
+                                        Ok(d) => match f.to_string(&d) {
+                                            Ok(s) => {
+                                                *body = s;
+                                            }
+                                            Err(se) => {
+                                                if let Ok(mut toast_w) =
+                                                    TOASTS.get().unwrap().lock()
+                                                {
+                                                    toast_w.error(se.to_string().as_str());
+                                                }
+                                            }
+                                        },
+                                        Err(e) => {
+                                            if let Ok(mut toast_w) = TOASTS.get().unwrap().lock() {
+                                                toast_w.error(e.to_string().as_str());
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                            if !view_state {
+                                self.editor.ui(ui, body, id);
+                            } else {
+                                code_view_ui(ui, &template_str, "json");
+                            }
+                            ui.data_mut(|data| {
+                                data.insert_temp(req_id, (view_state, template_str))
+                            });
+                        })
                     });
             });
         });
@@ -328,7 +354,7 @@ impl Into<MockDefine> for MockData {
 
         let mock_ret = self.resp;
 
-        let relay_url = if mock_ret.is_proxy {
+        let relay_url = if !mock_ret.is_proxy {
             None
         } else {
             Some(mock_ret.dist_url)
