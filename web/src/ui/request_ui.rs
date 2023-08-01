@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use crate::app::REQ_UI_ID;
 use crate::app::TASK_CHANNEL;
 use crate::app::TOASTS;
 use crate::app::TOKIO_RT;
 use crate::component::code_editor::TextEdit;
-use crate::component::editeable_label::editable_label;
 use crate::component::header_ui::HeaderUi;
 use crate::component::header_ui::SelectKeyValueItem;
 use crate::component::syntax_highlight::code_view_ui;
@@ -14,13 +12,13 @@ use crate::request_data::Method;
 use crate::request_data::MockData;
 use crate::request_data::ReqMockData;
 use crate::request_data::RspMockData;
-use crate::utils::template::rander_template;
 use egui_commonmark::CommonMarkCache;
 use egui_commonmark::CommonMarkViewer;
 use serde_json::Value;
 use server::common::data::HttpMockRequest;
 use server::common::data::MockServerHttpResponse;
 use server::common::mock::MockDefine;
+use server::template::rander_template;
 #[derive(Default)]
 pub struct RequestUi {
     pub editor: TextEdit,
@@ -37,7 +35,7 @@ impl RequestUi {
         } = request_data;
 
         ui.vertical(|ui| {
-            ui.add(editable_label(remark));
+            // ui.add(editable_label(remark));
             ui.horizontal(|ui| {
                 ui.label("请求方法:");
                 egui::ComboBox::from_label("🌐")
@@ -255,13 +253,13 @@ impl ResponseUi {
                                                 match serde_json::to_string_pretty(&json_body) {
                                                     Ok(s) => {s},
                                                     Err(e) => {
-                                                        log::error!("渲染错误{}",e.to_string());
+                                                        log::debug!("渲染错误{}",e.to_string());
                                                         body.clone()
                                                     },
                                                 }
                                             }
                                             Err(e) => {
-                                                log::error!("{}",e.to_string());
+                                                log::debug!("{}",e.to_string());
                                                 body.clone()
                                             },
                                         };
@@ -313,8 +311,8 @@ impl Into<MockDefine> for MockData {
         let mut req;
         if self.req.path.contains('?') {
             let path_query_split: Vec<&str> = self.req.path.split('?').collect();
-            let path = path_query_split.first().unwrap().clone().to_string();
-            let query = &(*path_query_split.get(1).unwrap()).clone();
+            let path = path_query_split.first().unwrap().to_string();
+            let query = *path_query_split.get(1).unwrap();
             let query_params_m: HashMap<String, String> = query
                 .split('&')
                 .map(|qr| {
@@ -350,7 +348,27 @@ impl Into<MockDefine> for MockData {
             });
         req.headers(headers);
         req.method(self.req.method.to_string());
-        req.body(self.req.body.as_bytes().to_vec());
+
+        //req和resp处理json5
+        let template_str = match json5::from_str::<Value>(&self.req.body) {
+            Ok(json_body) => {
+                log::debug!("渲染:{:?}",&json_body);
+                match serde_json::to_string_pretty(&json_body) {
+                    Ok(s) => {s},
+                    Err(e) => {
+                        log::error!("渲染错误{}",e.to_string());
+                        self.req.body.clone()
+                    },
+                }
+            }
+            Err(e) => {
+                log::error!("{}",e.to_string());
+                self.req.body.clone()
+            },
+        };
+
+
+        req.body(template_str.as_bytes().to_vec());
 
         let mock_ret = self.resp;
 
@@ -362,7 +380,24 @@ impl Into<MockDefine> for MockData {
 
         let mut resp = MockServerHttpResponse::new();
 
-        resp.body = Some(mock_ret.body.as_bytes().to_vec());
+        let template_str = match json5::from_str::<Value>(&mock_ret.body) {
+            Ok(json_body) => {
+                log::debug!("渲染:{:?}",&json_body);
+                match serde_json::to_string_pretty(&json_body) {
+                    Ok(s) => {s},
+                    Err(e) => {
+                        log::error!("渲染错误{}",e.to_string());
+                        mock_ret.body.clone()
+                    },
+                }
+            }
+            Err(e) => {
+                log::error!("{}",e.to_string());
+                mock_ret.body.clone()
+            },
+        };
+
+        resp.body = Some(template_str.as_bytes().to_vec());
 
         resp.delay = Some(Duration::from_millis(mock_ret.delay.into()));
 

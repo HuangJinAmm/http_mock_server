@@ -13,7 +13,7 @@ use serde_json::Value as JValue;
 use crate::matchers::comparators::{match_json_key, ValueComparator};
 use crate::matchers::targets::{MultiValueTarget, ValueTarget};
 use crate::matchers::{diff_str, Matcher};
-use crate::template::TEMP_ENV;
+use crate::template::{TEMP_ENV, rander_template};
 
 use super::data::{HttpMockRequest, Mismatch, MockServerHttpResponse, Reason, Tokenizer};
 use super::mock::MockDefine;
@@ -113,7 +113,6 @@ pub struct JinjaTemplateHandler {}
 #[async_trait]
 impl MockHandler for JinjaTemplateHandler {
     async fn handle(&self, req: &mut MockFilterWrapper) -> Option<MockServerHttpResponse> {
-        let mock_resp_id = req.mock_define.id.to_string();
         let mut ret_mock_resp:Option<MockServerHttpResponse> = None;
         let start = std::time::SystemTime::now();
 
@@ -142,31 +141,25 @@ impl MockHandler for JinjaTemplateHandler {
         log::debug!("获取到的局部变量{:#?}",&temp_ctx);
         if let Ok(env) = TEMP_ENV.read() {
             //处理body模板
-            let body_temp_key = format!("{}_body", mock_resp_id.as_str());
-            if let Ok(body_temp) = env.get_template(body_temp_key.as_str()) {
+            if let Some(body_tmp) = req.mock_define.resp.body.clone().map(|b|String::from_utf8(b).unwrap_or_default()) {
                 let mut mock_resp = req.mock_define.resp.clone();
-                let rendered =
-                    match body_temp.render(temp_ctx.clone()) {
-                        Ok(s) => s,
-                        Err(e) => e.to_string(),
-                    };
+                let rendered = match env.render_str(&body_tmp,temp_ctx.clone()) {
+                    Ok(s) => s,
+                    Err(e) => e.to_string(),
+                };
                 mock_resp.body = Some(rendered.as_bytes().to_vec());
                 ret_mock_resp = Some(mock_resp);
             }
+
             //处理header的模板
             if let Some(mock_headers) = req.mock_define.resp.headers.clone(){
                 let dealed_headers:Vec<(String,String)> = mock_headers.into_iter()
                     .map(|(key,val)|{
-                        let header_key = format!("{}_header_{}", mock_resp_id.as_str(), key.as_str());
-                        if let Ok(header_tmp) = env.get_template(header_key.as_str()) {
-                            let rander_header = match header_tmp.render(temp_ctx.clone()) {
-                                Ok(s) => s,
-                                Err(e) => e.to_string(),
-                            };
-                            (key,rander_header)
-                        } else {
-                            (key,val)
-                        }
+                        let rander_header = match env.render_str(&val,temp_ctx.clone()) {
+                            Ok(s) => s,
+                            Err(e) => e.to_string(),
+                        };
+                        (key,rander_header)
                     }).collect();
                 if let Some(ret_mock_resp_c) = ret_mock_resp.as_mut() {
                     ret_mock_resp_c.headers = Some(dealed_headers);

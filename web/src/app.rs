@@ -28,19 +28,18 @@ const TEMP_GLOBAL_KEY: &str = "PRE_HTTP";
 const APP_KEY: &str = "egui-http-mock-server";
 
 static TABS: OnceCell<Vec<String>> = OnceCell::new();
-pub static REQ_UI_ID: OnceCell<Id> = OnceCell::new();
 // id.times
 pub static mut TASK_CHANNEL: Lazy<(Sender<(u64, u32, u32)>, Receiver<(u64, u32, u32)>)> =
     Lazy::new(|| tokio::sync::mpsc::channel(100));
 // id,time
-pub static mut RESULTE_CHANNEL: Lazy<(
-    Sender<(u64, i64, ResponseData)>,
-    Receiver<(u64, i64, ResponseData)>,
-)> = Lazy::new(|| tokio::sync::mpsc::channel(100));
-pub static mut M_RESULTE_CHANNEL: Lazy<(
-    Sender<(u64, usize, i64, ResponseData)>,
-    Receiver<(u64, usize, i64, ResponseData)>,
-)> = Lazy::new(|| tokio::sync::mpsc::channel(100));
+// pub static mut RESULTE_CHANNEL: Lazy<(
+//     Sender<(u64, i64, ResponseData)>,
+//     Receiver<(u64, i64, ResponseData)>,
+// )> = Lazy::new(|| tokio::sync::mpsc::channel(100));
+// pub static mut M_RESULTE_CHANNEL: Lazy<(
+//     Sender<(u64, usize, i64, ResponseData)>,
+//     Receiver<(u64, usize, i64, ResponseData)>,
+// )> = Lazy::new(|| tokio::sync::mpsc::channel(100));
 pub static TOASTS: OnceCell<Arc<Mutex<Toasts>>> = OnceCell::new();
 pub static TOKIO_RT: Lazy<Runtime> = Lazy::new(|| {
     tokio::runtime::Builder::new_multi_thread()
@@ -49,12 +48,12 @@ pub static TOKIO_RT: Lazy<Runtime> = Lazy::new(|| {
         .build()
         .unwrap()
 });
-pub static mut CLIENT: Lazy<Client> = Lazy::new(|| {
-    Client::builder()
-        .danger_accept_invalid_certs(true)
-        .build()
-        .unwrap_or_default()
-});
+// pub static mut CLIENT: Lazy<Client> = Lazy::new(|| {
+//     Client::builder()
+//         .danger_accept_invalid_certs(true)
+//         .build()
+//         .unwrap_or_default()
+// });
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]

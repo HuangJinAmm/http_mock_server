@@ -1,19 +1,13 @@
 use std::{collections::HashMap, fmt::Debug, str::FromStr};
 
-use crate::{component::header_ui::SelectKeyValueItem, utils::template::rander_template};
-use hdrhistogram::Histogram;
+use crate::component::header_ui::SelectKeyValueItem;
 use minijinja::value::Value as JValue;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::{Request, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
-pub struct ScriptData {
-    pub pre: String,
-    pub after: String,
-}
+use server::template::rander_template;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct RequestData {
@@ -42,79 +36,6 @@ pub struct ResponseData {
     pub size: u64,
     pub code: String,
     pub time: i64,
-}
-
-#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
-pub struct LoadTestData {
-    pub reqs: u32,
-    pub round: u32,
-    pub process: f32,
-    #[serde(skip)]
-    pub result: LoadTestResult,
-    pub result_list: Vec<i64>,
-}
-
-impl LoadTestData {
-    #[inline]
-    pub fn total(&self) -> u64 {
-        (self.reqs as u64) * (self.round as u64)
-    }
-
-    pub fn update_process(&mut self) {
-        self.process = (self.result_list.len() as f32) / (self.total() as f32);
-    }
-
-    pub fn recode_time(&mut self, time: i64) {
-        self.result
-            .result_hist
-            .as_mut()
-            .unwrap()
-            .record(time as u64)
-            .unwrap();
-    }
-
-    pub fn add_result(&mut self, index: usize, time: i64) {
-        self.result_list.get_mut(index).map(|r| *r = time);
-    }
-}
-
-#[derive(Clone)]
-// #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct LoadTestResult {
-    // total: u16,
-    // average: f32,
-    // median: f32,
-    // min: u16,
-    // max: u16,
-    // line90: f32,
-    // line95: f32,
-    // line99: f32,
-    pub error: f32,
-    pub recived: f32,
-    pub send: f32,
-    // #[serde(skip)]
-    pub result_hist: Option<Histogram<u64>>,
-}
-
-impl Debug for LoadTestResult {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("LoadTestResult")
-            .field("error", &self.error)
-            .field("recived", &self.recived)
-            .field("send", &self.send)
-            .finish()
-    }
-}
-
-impl Default for LoadTestResult {
-    fn default() -> Self {
-        Self {
-            error: Default::default(),
-            recived: Default::default(),
-            send: Default::default(),
-            result_hist: Some(Histogram::<u64>::new_with_bounds(1, 60 * 60 * 1000, 2).unwrap()),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

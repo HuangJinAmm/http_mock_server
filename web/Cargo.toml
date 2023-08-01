@@ -6,7 +6,7 @@ edition = "2021"
 rust-version = "1.65"
 
 [features]
-default = ["syntect"]
+default = []
 syntect = ["dep:syntect"]
 
 [dependencies]
@@ -69,13 +69,14 @@ server = {path = "../server"}
 reqwest = {version="0.11.10",features=["cookies","multipart","json"]}
 rust-crypto = "0.2.36"
 rsa = "0.9.2"
-tokio={version="1.26.0",features=["rt","rt-multi-thread","sync"]}
-tokio-stream = {version = "0.1.14"}
+tokio={version="1.29.1",features=["rt","rt-multi-thread"]}
+# tokio-stream = {version = "0.1.14"}
 
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-tokio={version="1.26.0",features=["rt","macros","sync"]}
+# tokio={version="1.29",features=["rt"]}
+# tokio-stream = {version = "0.1.14"}
 console_error_panic_hook = "0.1.6"
 tracing-wasm = "0.2"
 wasm-bindgen-futures = "0.4"
@@ -93,8 +94,8 @@ codegen-units = 1
 [profile.dev.package."*"]
 opt-level = 2
 
-# [build-dependencies]
-# cc="*"
+[build-dependencies]
+cc="*"
 
 [patch.crates-io]
 

@@ -1,8 +1,8 @@
 pub mod common;
 mod error;
 mod matchers;
-mod template;
-mod aes_tool;
+pub mod template;
+pub mod aes_tool;
 
 use std::{
     borrow::{BorrowMut},
@@ -13,7 +13,7 @@ use std::{
 use common::{
     data::{HttpMockRequest, MockServerHttpResponse},
 };
-use poem::{Result, middleware::Cors, endpoint::StaticFilesEndpoint};
+use poem::{Result, middleware::Cors, endpoint::StaticFilesEndpoint, web::Json};
 use poem::{
     get, handler,
     http::{Method, Uri},
@@ -22,7 +22,7 @@ use poem::{
     Body, EndpointExt, Request, RequestBody, Response, Route, RouteScheme, Server,
 };
 
-use crate::common::{MockServer, MOCK_SERVER, handle_mock_requset};
+use crate::common::{MockServer, MOCK_SERVER, handle_mock_requset, mock::MockDefine};
 
 
 pub async fn serve(path:&str) -> Result<(), Error> {
@@ -57,6 +57,21 @@ fn list_all() -> String {
     mock_server.list_all()
 }
 
+#[handler]
+fn add_mock(mock: Json<MockDefine>) -> String {
+    let mut mock_server = MOCK_SERVER.write().unwrap();
+    match mock_server.add(mock.0) {
+        Ok(_) => "添加成功".to_string(),
+        Err(s) => s,
+    }
+}
+
+#[handler]
+fn remove_mock(mock: Json<MockDefine>) -> String {
+    let mut mock_server = MOCK_SERVER.write().unwrap();
+    mock_server.delete(mock.0);
+    "删除成功".into()
+}
 
 // async fn handle(req: &mut HttpMockRequest) -> Result<MockServerHttpResponse> {
 //     let mut handler_wrap:Option<MockFilterWrapper> = None;

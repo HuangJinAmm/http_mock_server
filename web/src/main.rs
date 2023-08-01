@@ -27,7 +27,7 @@ fn main() -> eframe::Result<()> {
     egui_logger::init().unwrap();
     log::set_max_level(log::LevelFilter::Debug);
     let mut native_options = eframe::NativeOptions::default();
-    let icon = IconData::try_from_png_bytes(include_bytes!("../http.png")).unwrap();
+    let icon = IconData::try_from_png_bytes(include_bytes!("../database-storage_2906274.png")).unwrap();
     native_options.icon_data = Some(icon);
     eframe::run_native(
         format!("HTTP模拟服务器-端口{}", *PORT).as_str(),
