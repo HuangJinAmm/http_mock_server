@@ -246,7 +246,7 @@ impl eframe::App for TemplateApp {
                                 // "设置".to_owned(),
                                 "文档".to_owned(),
                                 "记录".to_owned(),
-                                // "脚本".to_owned(),
+                                "脚本".to_owned(),
                             ]
                         })
                         .iter()
@@ -374,9 +374,10 @@ impl eframe::App for TemplateApp {
                         }
                         tree_ui::Action::SyncToServer((id, active)) => {
                             let mut msg = String::new();
-                            if active {
-                                if let Some(mockdata) = self.api_data.tests.get(&id) {
-                                    if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                            if let Some(mockdata) = self.api_data.tests.get(&id) {
+                                
+                                if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                                    if active {
                                         let mut mock: MockDefine = mockdata.clone().into();
                                         mock.id = id;
                                         if mock.req.path.is_empty() || mock.resp.body.is_none() {
@@ -393,21 +394,16 @@ impl eframe::App for TemplateApp {
                                                 }
                                             };
                                         }
-                                    }
-                                }
-                            } else {
-                                if let Some(mockdata) = self.api_data.tests.get(&id) {
-                                    if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                                    } else {
                                         let mut mock: MockDefine = mockdata.clone().into();
                                         mock.id = id;
                                         mock_server.delete(mock);
                                         msg = format!("已取消配置{}", id)
-                                    } else {
-                                        msg = format!("删除失败！获取锁失败{}", id);
-                                    }
+                                    };
+                                } else {
+                                    msg = format!("获取锁失败，请重试");
                                 }
-                            };
-
+                            }
                             match toast.lock() {
                                 Ok(mut toast_w) => {
                                     toast_w.info(msg).set_duration(Some(Duration::from_secs(5)));

@@ -89,6 +89,27 @@ impl RequestUi {
 
                     ui.horizontal(|ui| {
                         ui.label("请求体：");
+                        if ui.button("校验schema").clicked() {
+                            let schema_valid_res= match json5::from_str::<Value>(&body) {
+                                Ok(json_body) => {
+                                    log::debug!("渲染:{:?}", &json_body);
+                                    match serde_json::to_string_pretty(&json_body) {
+                                        Ok(_) => "校验通过".to_owned(),
+                                        Err(e) => {
+                                            log::debug!("渲染错误{}", e.to_string());
+                                            format!("校验失败：{}",e.to_string())
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    log::debug!("{}", e.to_string());
+                                    format!("校验失败：{}",e.to_string())
+                                }
+                            }; 
+                            if let Ok(mut toast_w) = TOASTS.get().unwrap().lock() {
+                                toast_w.error(schema_valid_res);
+                            }
+                        }
                     });
                     self.editor.ui(ui, body, id);
                 })
@@ -232,7 +253,7 @@ impl ResponseUi {
                                                 return;
                                             }
                                         });
-                                        log::debug!("body:{}",&body);
+                                        log::debug!("body:{}", &body);
                                         let deal_temp = match rander_template(&body) {
                                             Ok(parsed_temp) => parsed_temp,
                                             Err(e) => {
@@ -246,22 +267,22 @@ impl ResponseUi {
                                                 body.clone()
                                             }
                                         };
-                                        log::debug!("渲染:{}",&deal_temp);
+                                        log::debug!("渲染:{}", &deal_temp);
                                         template_str = match json5::from_str::<Value>(&deal_temp) {
                                             Ok(json_body) => {
-                                                log::debug!("渲染:{:?}",&json_body);
+                                                log::debug!("渲染:{:?}", &json_body);
                                                 match serde_json::to_string_pretty(&json_body) {
-                                                    Ok(s) => {s},
+                                                    Ok(s) => s,
                                                     Err(e) => {
-                                                        log::debug!("渲染错误{}",e.to_string());
+                                                        log::debug!("渲染错误{}", e.to_string());
                                                         body.clone()
-                                                    },
+                                                    }
                                                 }
                                             }
                                             Err(e) => {
-                                                log::debug!("{}",e.to_string());
+                                                log::debug!("{}", e.to_string());
                                                 body.clone()
-                                            },
+                                            }
                                         };
                                     }
                                 }
@@ -289,6 +310,8 @@ impl ResponseUi {
                                         }
                                     }
                                 }
+
+
                             });
                             if !view_state {
                                 self.editor.ui(ui, body, id);
@@ -352,21 +375,20 @@ impl Into<MockDefine> for MockData {
         //req和resp处理json5
         let template_str = match json5::from_str::<Value>(&self.req.body) {
             Ok(json_body) => {
-                log::debug!("渲染:{:?}",&json_body);
+                log::debug!("渲染:{:?}", &json_body);
                 match serde_json::to_string_pretty(&json_body) {
-                    Ok(s) => {s},
+                    Ok(s) => s,
                     Err(e) => {
-                        log::error!("渲染错误{}",e.to_string());
+                        log::error!("渲染错误{}", e.to_string());
                         self.req.body.clone()
-                    },
+                    }
                 }
             }
             Err(e) => {
-                log::error!("{}",e.to_string());
+                log::error!("{}", e.to_string());
                 self.req.body.clone()
-            },
+            }
         };
-
 
         req.body(template_str.as_bytes().to_vec());
 
@@ -382,19 +404,19 @@ impl Into<MockDefine> for MockData {
 
         let template_str = match json5::from_str::<Value>(&mock_ret.body) {
             Ok(json_body) => {
-                log::debug!("渲染:{:?}",&json_body);
+                log::debug!("渲染:{:?}", &json_body);
                 match serde_json::to_string_pretty(&json_body) {
-                    Ok(s) => {s},
+                    Ok(s) => s,
                     Err(e) => {
-                        log::error!("渲染错误{}",e.to_string());
+                        log::error!("渲染错误{}", e.to_string());
                         mock_ret.body.clone()
-                    },
+                    }
                 }
             }
             Err(e) => {
-                log::error!("{}",e.to_string());
+                log::error!("{}", e.to_string());
                 mock_ret.body.clone()
-            },
+            }
         };
 
         resp.body = Some(template_str.as_bytes().to_vec());
@@ -420,6 +442,8 @@ impl Into<MockDefine> for MockData {
         MockDefine {
             id,
             remark,
+            req_script: None,
+            resp_script: None,
             req,
             resp,
             relay_url,

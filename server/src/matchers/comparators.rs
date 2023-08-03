@@ -12,8 +12,31 @@ pub trait ValueComparator<S, T> {
     fn distance(&self, mock_value: &Option<&S>, req_value: &Option<&T>) -> usize;
 }
 
-pub struct  JSONRegexMatchComparator {
+pub struct JsonSchemaMatchComparator {}
 
+impl JsonSchemaMatchComparator {
+
+    pub fn new() -> Self {
+        Self {}
+    } 
+}
+
+impl ValueComparator<Value, Value> for JsonSchemaMatchComparator {
+    fn matches(&self, mock_value: &Value, req_value: &Value) -> bool {
+        jsonschema::is_valid(mock_value, req_value)
+    }
+
+    fn name(&self) -> &str {
+        "json schema 匹配"
+    }
+
+    fn distance(&self, mock_value: &Option<&Value>, req_value: &Option<&Value>) -> usize {
+        1
+    }
+}
+
+
+pub struct  JSONRegexMatchComparator {
 }
 
 impl JSONRegexMatchComparator {
@@ -497,5 +520,82 @@ mod test {
             0, // compute distance even if values match!
             "any",
         );
+    }
+
+    #[test]
+    fn test_json_schema() {
+        let s = json!({
+            "description": "A product from Acme's catalog",
+            "type": "object",
+            "properties": {
+              "productId": {
+                "description": "The unique identifier for a product",
+                "type": "integer"
+              },
+              "productName": {
+                "description": "Name of the product",
+                "type": "string"
+              },
+              "price": {
+                "description": "The price of the product",
+                "type": "number",
+                "exclusiveMinimum": 10
+              },
+              "tags": {
+                "description": "Tags for the product",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "dimensions": {
+                "type": "object",
+                "properties": {
+                  "length": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                },
+                "required": [ "length", "width", "height" ]
+              }
+            },
+            "required": [ "productId", "productName", "price" ]
+          });
+
+          let j = json!({
+            "productId": 1,
+            "productName": "An ice sculpture",
+            "tags": [ "cold", "ice" ],
+            "dimensions": {
+              "length": 7.0,
+              "width": 12.0,
+              "height": 9.5
+            }
+          });
+          let cs = jsonschema::JSONSchema::compile(&s);
+          match cs {
+            Ok(js) => {
+                match js.validate(&j) {
+                    Ok(rs) => {},
+                    Err(e) => {
+                        for error in e {
+                            println!("Validation error: {}", error);
+                            println!("Instance path: {}", error.instance_path);
+                        }
+                    },
+                }
+            },
+            Err(e) => {
+                println!("schema error: {}",e);
+                println!("schema path: {}", e.instance_path);
+            },
+        }
     }
 }

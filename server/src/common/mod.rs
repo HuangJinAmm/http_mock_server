@@ -6,8 +6,9 @@ use once_cell::sync::Lazy;
 use poem::Result;
 use poem::error::Error;
 use reqwest::StatusCode;
+use serde_json::Value;
 
-use crate::{matchers::{targets::{StringBodyTarget, MethodTarget, QueryParameterTarget, HeaderTarget, JSONBodyTarget}, comparators::{StringExactMatchComparator, JSONRegexMatchComparator, StringRegexMatchComparator}}, template::TEMP_ENV};
+use crate::{matchers::{targets::{StringBodyTarget, MethodTarget, QueryParameterTarget, HeaderTarget, JSONBodyTarget}, comparators::{StringExactMatchComparator, JSONRegexMatchComparator, StringRegexMatchComparator, JsonSchemaMatchComparator}}, template::TEMP_ENV};
 
 use self::{
     data::{HttpMockRequest, Tokenizer, MockServerHttpResponse},
@@ -59,15 +60,22 @@ pub static FILTERS: Lazy<Arc<RequestFilter>> = Lazy::new(||{
                 handler: JinjaTemplateHandler {},
                 relay: RelayServerHandler{},
                 body_mather: vec![
+                    Box::new(SingleValueMatcher::<Value>{
+                        entity_name: "body schema match",
+                        target: Box::new(JSONBodyTarget::new()),
+                        comparator:  Box::new(JsonSchemaMatchComparator::new()),
+                        with_reason: false,
+                        diff_with: None,
+                    }),
                     Box::new(RegexValueMatcher{
-                        entity_name: "body",
+                        entity_name: "body json regex match",
                         comparator: Box::new(JSONRegexMatchComparator::new()),
                         target: Box::new(JSONBodyTarget::new()),
                         with_reason: true,
                         // weight: 1,
                     }),
                     Box::new(SingleValueMatcher::<String> {
-                        entity_name: "body",
+                        entity_name: "body string match",
                         target: Box::new(StringBodyTarget::new()),
                         comparator:  Box::new(StringRegexMatchComparator::new()),
                         with_reason: false,

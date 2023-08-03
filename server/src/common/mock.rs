@@ -6,6 +6,8 @@ use super::data::{HttpMockRequest, MockServerHttpResponse};
 pub struct MockDefine {
     pub id: u64,
     pub remark:String,
+    pub req_script:Option<String>,
+    pub resp_script:Option<String>,
     pub req: HttpMockRequest,
     pub resp: MockServerHttpResponse,
     pub relay_url: Option<String>,

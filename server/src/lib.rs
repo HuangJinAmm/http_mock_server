@@ -13,7 +13,7 @@ use std::{
 use common::{
     data::{HttpMockRequest, MockServerHttpResponse},
 };
-use poem::{Result, middleware::Cors, endpoint::StaticFilesEndpoint, web::Json};
+use poem::{Result, middleware::Cors, endpoint::StaticFilesEndpoint, web::Json, post};
 use poem::{
     get, handler,
     http::{Method, Uri},
@@ -34,9 +34,11 @@ pub async fn serve(path:&str) -> Result<(), Error> {
                                     .trace(mock_handle)
                                     .post(mock_handle);
     let app = Route::new()
-        .at("/_mock_list", get(list_all))
+        .at("/mock_list", get(list_all))
+        .at("/mock_add", post(add_mock))
+        .at("/mock_remove",post(remove_mock))
         .nest(
-            "/_mock_info",
+            "/mock_info",
             StaticFilesEndpoint::new("./docs").index_file("index.html"),
         )
         .at("/*", controller).with(cors).with(Tracing);

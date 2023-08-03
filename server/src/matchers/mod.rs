@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use serde_json::Value;
 use similar::{ChangeTag, TextDiff};
 
 use crate::common::data::{
@@ -71,4 +72,11 @@ where
     let expected = expected.map_or(String::new(), |x| x.to_string());
     let actual = actual.map_or(String::new(), |x| x.to_string());
     levenshtein::levenshtein(&expected, &actual)
+}
+
+pub fn valid_json_schema(schema:&Value) -> Result<(),String> {
+    match jsonschema::JSONSchema::compile(schema) {
+        Ok(_) => {Ok(())},
+        Err(e) => {Err(e.to_string())},
+    }
 }
