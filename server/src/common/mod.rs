@@ -8,12 +8,12 @@ use poem::error::Error;
 use reqwest::StatusCode;
 use serde_json::Value;
 
-use crate::{matchers::{targets::{StringBodyTarget, MethodTarget, QueryParameterTarget, HeaderTarget, JSONBodyTarget}, comparators::{StringExactMatchComparator, JSONRegexMatchComparator, StringRegexMatchComparator, JsonSchemaMatchComparator}}, template::TEMP_ENV};
+use crate::{matchers::{targets::{StringBodyTarget, MethodTarget, QueryParameterTarget, HeaderTarget, JSONBodyTarget, JSONSchemaTarget}, comparators::{StringExactMatchComparator, JSONRegexMatchComparator, StringRegexMatchComparator, JsonSchemaMatchComparator}}, template::TEMP_ENV};
 
 use self::{
     data::{HttpMockRequest, Tokenizer, MockServerHttpResponse},
     filter::{
-        JinjaTemplateHandler, MockFilter, MockFilterWrapper, RequestFilter, SingleValueMatcher,MultiValueMatcher, RelayServerHandler, RegexValueMatcher,
+        JinjaTemplateHandler, MockFilter, MockFilterWrapper, RequestFilter, SingleValueMatcher,MultiValueMatcher, RelayServerHandler, RegexValueMatcher, JsonSchemaMatcher,
     },
     mock::MockDefine,
     radix_tree::RadixTree,
@@ -60,12 +60,12 @@ pub static FILTERS: Lazy<Arc<RequestFilter>> = Lazy::new(||{
                 handler: JinjaTemplateHandler {},
                 relay: RelayServerHandler{},
                 body_mather: vec![
-                    Box::new(SingleValueMatcher::<Value>{
+                    Box::new(JsonSchemaMatcher{
                         entity_name: "body schema match",
                         target: Box::new(JSONBodyTarget::new()),
+                        source: Box::new(JSONSchemaTarget::new()),
                         comparator:  Box::new(JsonSchemaMatchComparator::new()),
                         with_reason: false,
-                        diff_with: None,
                     }),
                     Box::new(RegexValueMatcher{
                         entity_name: "body json regex match",
@@ -112,10 +112,10 @@ impl MockServer {
         let mut dispath = self.handler_dispatch.write().unwrap();
         let mut server = self.handlers.write().unwrap();
         let id = mock.id;
-        if let Some(template) = mock.resp.body.clone() {
-            let temp_str = String::from_utf8(template).unwrap();
-            if let Ok(mut lock) = TEMP_ENV.write() {
-                let env = lock.borrow_mut();
+        // if let Some(template) = mock.resp.body.clone() {
+            // let temp_str = String::from_utf8(template).unwrap();
+            // if let Ok(mut lock) = TEMP_ENV.write() {
+                // let env = lock.borrow_mut();
                 // let mut source = env.source().unwrap().clone();
 
                 //添加header的值到模板
@@ -145,9 +145,9 @@ impl MockServer {
                     let _route_result = dispath.add(url.as_str(), vec![id]).map_err(|e|e.to_string())?;
                 }
                 return Ok(());
-            }
-        }
-        Err("添时锁冲突".to_string())
+            // }
+        // }
+        // Err("添时锁冲突".to_string())
     }
 
     // pub fn change(&mut self,mock:MockDefine) -> Result<(),RouteError> {

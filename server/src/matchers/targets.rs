@@ -38,6 +38,40 @@ impl ValueTarget<String> for StringBodyTarget {
     }
 }
 
+pub(crate) struct JSONSchemaTarget {}
+
+impl JSONSchemaTarget {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+impl ValueTarget<Value> for JSONSchemaTarget {
+    fn parse_from_request(&self, req: &HttpMockRequest) -> Option<Value> {
+        let body = req.body_schema.as_ref();
+        if body.is_none() || body.unwrap().is_empty(){
+            return None;
+        }
+        let body_vec = body.unwrap();
+        if let Ok(body_str) = String::from_utf8(body_vec.to_owned()) {
+            // let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
+            // let dealed_body = re.replace_all(&body_str, "");
+            match serde_json::from_str(body_str.as_ref()) {
+                Ok(v) => {return Some(v)},
+                Err(e) => {
+                    log::trace!("paser json error:{}",e);
+                    return None;
+                },
+            }
+        }
+        match serde_json::from_slice(body.unwrap()) {
+            Err(e) => {
+                log::trace!("Cannot parse json value: {}", e);
+                None
+            }
+            Ok(v) => Some(v),
+        }
+    }
+}
 // *************************************************************************************
 // JSONBodyTarget
 // *************************************************************************************
@@ -57,9 +91,9 @@ impl ValueTarget<Value> for JSONBodyTarget {
         }
         let body_vec = body.unwrap();
         if let Ok(body_str) = String::from_utf8(body_vec.to_owned()) {
-            let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
-            let dealed_body = re.replace_all(&body_str, "");
-            match serde_json::from_str(dealed_body.as_ref()) {
+            // let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
+            // let dealed_body = re.replace_all(&body_str, "");
+            match serde_json::from_str(body_str.as_ref()) {
                 Ok(v) => {return Some(v)},
                 Err(e) => {
                     log::trace!("paser json error:{}",e);

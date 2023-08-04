@@ -8,7 +8,7 @@ use egui::{global_dark_light_mode_switch, Color32, FontData, FontDefinitions, Fr
 use egui_dock::{DockArea, Style, Tree};
 use egui_file::{DialogType, FileDialog};
 use egui_notify::Toasts;
-use log::info;
+use log::{debug, info};
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
 use reqwest::{Client, Request};
@@ -124,10 +124,36 @@ impl TemplateApp {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            let app = eframe::get_value(storage, APP_KEY).unwrap_or_default();
+            let app: TemplateApp = eframe::get_value(storage, APP_KEY).unwrap_or_default();
+            app.init_active();
             return app;
         }
         TemplateApp::default()
+    }
+
+    fn init_active(&self) {
+        if let Some(ids) = self.tree_ui.get_all_active_nodes() {
+            dbg!(&ids);
+            if let Ok(mut mock_server) = MOCK_SERVER.write() {
+                for id in ids {
+                    if let Some(mockdata) = self.api_data.tests.get(&id) {
+                        let mut mock: MockDefine = mockdata.clone().into();
+                        mock.id = id;
+                        if !mock.req.path.is_empty() && mock.resp.body.is_some() {
+                            match mock_server.add(mock) {
+                                Ok(_) => {
+                                    debug!("id{}初始添加成功", id );
+                                }
+                                Err(e) => {
+                                    //ignore
+                                    debug!("id{}初始添加错误：{}", id, e);
+                                }
+                            };
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // pub fn load_ui(&mut self,title: String,tab_ui: Box<dyn TabUi<T = ApiContext>>) {
@@ -246,7 +272,7 @@ impl eframe::App for TemplateApp {
                                 // "设置".to_owned(),
                                 "文档".to_owned(),
                                 "记录".to_owned(),
-                                "脚本".to_owned(),
+                                // "脚本".to_owned(),
                             ]
                         })
                         .iter()
@@ -375,7 +401,6 @@ impl eframe::App for TemplateApp {
                         tree_ui::Action::SyncToServer((id, active)) => {
                             let mut msg = String::new();
                             if let Some(mockdata) = self.api_data.tests.get(&id) {
-                                
                                 if let Ok(mut mock_server) = MOCK_SERVER.write() {
                                     if active {
                                         let mut mock: MockDefine = mockdata.clone().into();

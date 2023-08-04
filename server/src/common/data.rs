@@ -20,6 +20,7 @@ pub struct HttpMockRequest {
     pub headers: Option<HashMap<String, String>>,
     pub query_params: Option<HashMap<String, String>>,
     pub body: Option<Vec<u8>>,
+    pub body_schema:Option<Vec<u8>>
 }
 
 #[poem::async_trait]
@@ -60,6 +61,7 @@ impl Into<reqwest::Request> for HttpMockRequest {
             headers,
             query_params,
             body,
+            body_schema
         } = self;
         let method = method.as_ref().unwrap_or(&"GET".to_string()).to_uppercase();
         let req_method = Method::from_bytes(method.as_bytes()).unwrap_or_default();
@@ -110,6 +112,7 @@ impl HttpMockRequest {
             headers: None,
             query_params: None,
             body: None,
+            body_schema:None
         }
     }
     pub fn method(&mut self, method: String) {

@@ -60,7 +60,6 @@ fn match_string_regex(regex:&str,value:&str) -> bool {
 pub fn match_json_key(root:String,mock:&Value,req:&Value) -> Option<String>{
     match(mock,req) {
         (Value::String(mock_str),req_v) => {
-            log::debug!("匹配中:");
             log::debug!("mock:{}",mock_str);
             log::debug!("req:{}",req);
             match (mock_str.as_str(),req_v) {

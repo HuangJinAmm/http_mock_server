@@ -8,6 +8,7 @@ use crate::component::code_editor::TextEdit;
 use crate::component::header_ui::HeaderUi;
 use crate::component::header_ui::SelectKeyValueItem;
 use crate::component::syntax_highlight::code_view_ui;
+use crate::request_data::BodyType;
 use crate::request_data::Method;
 use crate::request_data::MockData;
 use crate::request_data::ReqMockData;
@@ -27,10 +28,11 @@ pub struct RequestUi {
 impl RequestUi {
     pub fn ui(&mut self, ui: &mut egui::Ui, request_data: &mut ReqMockData, id: u64) {
         let ReqMockData {
-            remark,
+            remark: _,
             path,
             method,
             headers,
+            body_type,
             body,
         } = request_data;
 
@@ -38,7 +40,8 @@ impl RequestUi {
             // ui.add(editable_label(remark));
             ui.horizontal(|ui| {
                 ui.label("请求方法:");
-                egui::ComboBox::from_label("🌐")
+                let com_id = ui.id().with("req_method");
+                egui::ComboBox::from_id_source(com_id)
                     .selected_text(format!("{:?}", method))
                     .show_ui(ui, |ui| {
                         ui.selectable_value(method, Method::GET, "GET");
@@ -89,23 +92,78 @@ impl RequestUi {
 
                     ui.horizontal(|ui| {
                         ui.label("请求体：");
-                        if ui.button("校验schema").clicked() {
-                            let schema_valid_res= match json5::from_str::<Value>(&body) {
+
+                        if ui.button("格式化JSON").clicked() {
+                            match json5::from_str::<Value>(&body) {
+                                Ok(json_body) => {
+                                    log::debug!("渲染:{:?}", &json_body);
+                                    match serde_json::to_string_pretty(&json_body) {
+                                        Ok(s) => *body = s,
+                                        Err(e) => {
+                                            log::debug!("渲染错误{}", e.to_string());
+                                            if let Ok(mut toast_w) = TOASTS.get().unwrap().lock() {
+                                                toast_w.error(e.to_string().as_str());
+                                            }
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    log::debug!("{}", e.to_string());
+                                    if let Ok(mut toast_w) = TOASTS.get().unwrap().lock() {
+                                        toast_w.error(e.to_string().as_str());
+                                    }
+                                }
+                            };
+                        }
+
+                        if ui.button("格式化JSON5").clicked() {
+                            let unfmt_json = body.clone();
+
+                            let f = json5format::Json5Format::new().unwrap();
+                            match json5format::ParsedDocument::from_str(&unfmt_json, None) {
+                                Ok(d) => match f.to_string(&d) {
+                                    Ok(s) => {
+                                        *body = s;
+                                    }
+                                    Err(se) => {
+                                        if let Ok(mut toast_w) = TOASTS.get().unwrap().lock() {
+                                            toast_w.error(se.to_string().as_str());
+                                        }
+                                    }
+                                },
+                                Err(e) => {
+                                    if let Ok(mut toast_w) = TOASTS.get().unwrap().lock() {
+                                        toast_w.error(e.to_string().as_str());
+                                    }
+                                }
+                            }
+                        }
+
+                        let com_id = ui.id().with(id).with("body_json_type");
+                        egui::ComboBox::from_id_source(com_id)
+                            .selected_text(format!("{}", body_type.get_string()))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(body_type, BodyType::Schema, "Schema");
+                                ui.selectable_value(body_type, BodyType::Json, "Json");
+                            });
+
+                        if *body_type == BodyType::Schema && ui.button("校验schema").clicked() {
+                            let schema_valid_res = match json5::from_str::<Value>(&body) {
                                 Ok(json_body) => {
                                     log::debug!("渲染:{:?}", &json_body);
                                     match serde_json::to_string_pretty(&json_body) {
                                         Ok(_) => "校验通过".to_owned(),
                                         Err(e) => {
                                             log::debug!("渲染错误{}", e.to_string());
-                                            format!("校验失败：{}",e.to_string())
+                                            format!("校验失败：{}", e.to_string())
                                         }
                                     }
                                 }
                                 Err(e) => {
                                     log::debug!("{}", e.to_string());
-                                    format!("校验失败：{}",e.to_string())
+                                    format!("校验失败：{}", e.to_string())
                                 }
-                            }; 
+                            };
                             if let Ok(mut toast_w) = TOASTS.get().unwrap().lock() {
                                 toast_w.error(schema_valid_res);
                             }
@@ -310,8 +368,6 @@ impl ResponseUi {
                                         }
                                     }
                                 }
-
-
                             });
                             if !view_state {
                                 self.editor.ui(ui, body, id);
@@ -375,11 +431,11 @@ impl Into<MockDefine> for MockData {
         //req和resp处理json5
         let template_str = match json5::from_str::<Value>(&self.req.body) {
             Ok(json_body) => {
-                log::debug!("渲染:{:?}", &json_body);
+                log::debug!("转换:{:?}", &json_body);
                 match serde_json::to_string_pretty(&json_body) {
                     Ok(s) => s,
                     Err(e) => {
-                        log::error!("渲染错误{}", e.to_string());
+                        log::error!("转换错误{}", e.to_string());
                         self.req.body.clone()
                     }
                 }
@@ -390,7 +446,14 @@ impl Into<MockDefine> for MockData {
             }
         };
 
-        req.body(template_str.as_bytes().to_vec());
+        match self.req.body_type {
+            BodyType::Schema => {
+                req.body_schema = Some(template_str.as_bytes().to_vec());
+            }
+            BodyType::Json => {
+                req.body(template_str.as_bytes().to_vec());
+            }
+        }
 
         let mock_ret = self.resp;
 

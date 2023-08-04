@@ -62,6 +62,10 @@ impl TreeUi {
         }
     }
 
+    pub fn get_all_active_nodes(&self) -> Option<Vec<u64>> {
+        self.sub_node.list_all_subids(Some(true))
+    }
+
     pub fn selected_id(&self) -> u64 {
         self.selected
     }
@@ -355,18 +359,22 @@ impl TreeUiNode {
             let sub_id = id.pop().unwrap();
             if let Some((i, _)) = self.sub_items.iter().enumerate().find(|n| n.1.id == sub_id) {
                 let node = self.sub_items.remove(i);
-                return Some(node.list_all_subids().unwrap_or(Vec::new()));
+                return Some(node.list_all_subids(None).unwrap_or(Vec::new()));
             }
             None
         }
     }
 
-    fn list_all_subids(&self) -> Option<Vec<u64>> {
+    //status表示当前节点的active状态,None着将不区分状态
+    pub fn list_all_subids(&self, status: Option<bool>) -> Option<Vec<u64>> {
         let subs = self.sub_items.clone();
-        let mut sub_ids = vec![self.id];
+        let mut sub_ids = vec![];
+        if status.is_none() || self.active == status.unwrap() {
+            sub_ids.push(self.id);
+        }
         if subs.len() > 0 {
             for sub in subs {
-                if let Some(mut each_sub_ids) = sub.list_all_subids() {
+                if let Some(mut each_sub_ids) = sub.list_all_subids(status) {
                     sub_ids.append(&mut each_sub_ids);
                 }
             }

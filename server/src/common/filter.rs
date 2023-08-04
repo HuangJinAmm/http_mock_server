@@ -4,6 +4,7 @@ use std::error::Error;
 use std::fmt::{Display, Debug};
 
 use async_trait::async_trait;
+use log::debug;
 use minijinja::value::Value;
 use minijinja::{context};
 
@@ -258,14 +259,12 @@ impl Matcher for RegexValueMatcher {
         // dbg!(String::from_utf8(mock_body).unwrap());
         // dbg!(&mock_value);
         match (mock_value, req_value) {
-                    (None, _) => {
-                        // mock_value 为空，但是body有值的情况，走后续匹配
-                        if req.body.is_some() {
-                            return false;
-                        } else {
+                    (None, None) => {
                             return true;
-                        }
                     },
+                    (None,Some(_)) => {
+                        return false;
+                    }
                     (Some(_), None) => return false,
                     (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
                 }
@@ -281,7 +280,25 @@ impl Matcher for RegexValueMatcher {
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.target.parse_from_request(mock);
         match (mock_value, req_value) {
-            (None, _) => return Vec::new(),
+            (None, None) => return Vec::new(),
+            (None, Some(m)) => {
+                let mut mis_vec = Vec::new();
+                let mis_match = Mismatch {
+                    title: format!("{} 不匹配", self.entity_name),
+                    reason: match self.with_reason {
+                        true => Some(Reason {
+                            actual: m.to_string(),
+                            expected: "None".to_string(),
+                            comparison: self.comparator.name().into(),
+                            best_match: false,
+                        }),
+                        false => None,
+                    },
+                    diff: None,
+                };
+                mis_vec.push(mis_match);
+                mis_vec
+            },
             (Some(m), None) => {
                 let mut mis_vec = Vec::new();
                 let mis_match = Mismatch {
@@ -324,6 +341,118 @@ impl Matcher for RegexValueMatcher {
     }
 }
 
+pub(crate) struct JsonSchemaMatcher {
+    pub entity_name: &'static str,
+    pub target: Box<dyn ValueTarget<JValue> + Send + Sync>,
+    pub source: Box<dyn ValueTarget<JValue> + Send + Sync>,
+    pub comparator: Box<dyn ValueComparator<JValue, JValue> + Send + Sync>,
+    pub with_reason: bool,
+}
+
+impl Matcher for JsonSchemaMatcher {
+    fn matches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> bool {
+        debug!("{}","JsonSchemaMatcher");
+        let req_value = self.target.parse_from_request(req);
+        let mock_value = self.source.parse_from_request(mock);
+        debug!("req:{:?}",&req_value);
+        debug!("mock:{:?}",&mock_value);
+        match (mock_value, req_value) {
+                    (None, None) => {
+                            return true;
+                    },
+                    (None,Some(_)) => {
+                        return false;
+                    }
+                    (Some(_), None) => return false,
+                    (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
+                }
+    }
+
+    fn distance(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> usize {
+        let req_value = self.target.parse_from_request(req);
+        let mock_value = self.source.parse_from_request(mock);
+        self.comparator.distance(&mock_value.as_ref(), &req_value.as_ref())
+    }
+
+    fn mismatches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> Vec<Mismatch> {
+        let req_value = self.target.parse_from_request(req);
+        let mock_value = self.source.parse_from_request(mock);
+        match (mock_value, req_value) {
+            (None, None) => return Vec::new(),
+            (None, Some(m)) => {
+                let mut mis_vec = Vec::new();
+                let mis_match = Mismatch {
+                    title: format!("{} 不匹配", self.entity_name),
+                    reason: match self.with_reason {
+                        true => Some(Reason {
+                            actual: m.to_string(),
+                            expected: "None".to_string(),
+                            comparison: self.comparator.name().into(),
+                            best_match: false,
+                        }),
+                        false => None,
+                    },
+                    diff: None,
+                };
+                mis_vec.push(mis_match);
+                mis_vec
+            },
+            (Some(m), None) => {
+                let mut mis_vec = Vec::new();
+                let mis_match = Mismatch {
+                    title: format!("{} 不匹配", self.entity_name),
+                    reason: match self.with_reason {
+                        true => Some(Reason {
+                            expected: m.to_string(),
+                            actual: "not found".to_string(),
+                            comparison: self.comparator.name().into(),
+                            best_match: false,
+                        }),
+                        false => None,
+                    },
+                    diff: None,
+                };
+                mis_vec.push(mis_match);
+                mis_vec
+            }
+            (Some(mock), Some(req)) => {
+                let mut mis_vec = Vec::new();
+                let result = match jsonschema::JSONSchema::compile(&mock) {
+                    Ok(j) => {
+                        match j.validate(&req) {
+                            Ok(_) => {
+                                "".to_owned() 
+                            },
+                            Err(err) => {
+                                let mut res = String::new();
+                                for e in err {
+                                    res.push_str(format!("匹配错误{},schema路径{},请求路径{}",e.instance,e.schema_path ,e.instance_path).as_str());
+                                }
+                                res
+                            },
+                        }
+                    },
+                    Err(e) => format!("匹配错误{},schema路径{},请求路径{}",e.instance,e.schema_path ,e.instance_path) ,
+                }; 
+                let mis_match = Mismatch {
+                    title: result,
+                    reason: match self.with_reason {
+                        true => Some(Reason {
+                            expected: mock.to_string(),
+                            actual: req.to_string(),
+                            comparison: self.comparator.name().into(),
+                            best_match: false,
+                        }),
+                        false => None,
+                    },
+                    diff: None,
+                };
+                mis_vec.push(mis_match);
+                dbg!(mis_vec)
+            }
+        }
+    }
+}
 pub(crate) struct SingleValueMatcher<T>
 where
     T: Display,
@@ -347,7 +476,8 @@ where
         log::debug!("MockValue:{:#?}",&mock_value);
         log::debug!("ReqValue:{:#?}",&req_value);
         match (mock_value, req_value) {
-                    (None, _) => return true,
+                    (None, Some(_)) => return false,
+                    (None, None) => return true,
                     (Some(_), None) => return false,
                     (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
                 }
@@ -364,7 +494,25 @@ where
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.target.parse_from_request(mock);
         match (mock_value, req_value) {
-            (None, _) => return Vec::new(),
+            (None, None) => return Vec::new(),
+            (None, Some(m)) => {
+                let mut mis_vec = Vec::new();
+                let mis_match = Mismatch {
+                    title: format!("{} 不匹配", self.entity_name),
+                    reason: match self.with_reason {
+                        true => Some(Reason {
+                            expected: "None".to_owned(),
+                            actual: m.to_string(),
+                            comparison: self.comparator.name().into(),
+                            best_match: false,
+                        }),
+                        false => None,
+                    },
+                    diff: None,
+                };
+                mis_vec.push(mis_match);
+                mis_vec
+            },
             (Some(m), None) => {
                 let mut mis_vec = Vec::new();
                 let mis_match = Mismatch {
@@ -378,7 +526,7 @@ where
                         }),
                         false => None,
                     },
-                    diff: self.diff_with.map(|t| diff_str(&m.to_string(), "", t)),
+                    diff: None,
                 };
                 mis_vec.push(mis_match);
                 mis_vec
