@@ -451,7 +451,7 @@ impl AutoSuggester {
     }
 
     pub fn json_schema() -> Self {
-        let mut sug = gen_suggest!(
+        let sug = gen_suggest!(
             "type",
             "enum",
             "const",

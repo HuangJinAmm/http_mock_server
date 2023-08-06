@@ -133,7 +133,6 @@ impl TemplateApp {
 
     fn init_active(&self) {
         if let Some(ids) = self.tree_ui.get_all_active_nodes() {
-            dbg!(&ids);
             if let Ok(mut mock_server) = MOCK_SERVER.write() {
                 for id in ids {
                     if let Some(mockdata) = self.api_data.tests.get(&id) {

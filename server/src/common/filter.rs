@@ -448,8 +448,8 @@ impl Matcher for JsonSchemaMatcher {
                     diff: None,
                 };
                 mis_vec.push(mis_match);
-                dbg!(mis_vec)
-            }
+                mis_vec
+           }
         }
     }
 }
