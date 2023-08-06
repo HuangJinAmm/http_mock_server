@@ -20,9 +20,14 @@ use server::common::data::HttpMockRequest;
 use server::common::data::MockServerHttpResponse;
 use server::common::mock::MockDefine;
 use server::template::rander_template;
-#[derive(Default)]
 pub struct RequestUi {
     pub editor: TextEdit,
+}
+
+impl Default for RequestUi {
+    fn default() -> Self {
+        Self { editor: TextEdit::new_json() }
+    }
 }
 
 impl RequestUi {
@@ -210,9 +215,14 @@ impl CollectionUi {
     }
 }
 
-#[derive(Default)]
 pub struct ResponseUi {
     editor: TextEdit,
+}
+
+impl Default for ResponseUi {
+    fn default() -> Self {
+        Self { editor: TextEdit::new_template()}
+    }
 }
 
 impl ResponseUi {

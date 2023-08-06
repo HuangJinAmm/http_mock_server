@@ -59,7 +59,7 @@ macro_rules! insert_suggest {
 
 impl Default for TextEdit {
     fn default() -> Self {
-        let sug = AutoSuggester::rhai();
+        let sug = AutoSuggester::default();
         Self {
             language: "json".to_owned(),
             suggest: sug,
@@ -76,6 +76,42 @@ impl TextEdit {
         Self {
             language: lang.to_owned(),
             ..Default::default()
+        }
+    }
+
+    pub fn new_json() -> Self {
+        let sug = AutoSuggester::json_schema();
+        Self {
+            language: "json5".to_owned(),
+            suggest: sug,
+            sug_pos: None,
+            selected_sug: "".to_owned(),
+            sug_str: None,
+            selected_range: None,
+        }
+    }
+
+    pub fn new_rhai() -> Self {
+        let sug = AutoSuggester::rhai();
+        Self {
+            language: "rs".to_owned(),
+            suggest: sug,
+            sug_pos: None,
+            selected_sug: "".to_owned(),
+            sug_str: None,
+            selected_range: None,
+        }
+    }
+
+    pub fn new_template() -> Self {
+        let sug = AutoSuggester::template();
+        Self {
+            language: "json".to_owned(),
+            suggest: sug,
+            sug_pos: None,
+            selected_sug: "".to_owned(),
+            sug_str: None,
+            selected_range: None,
         }
     }
 
@@ -445,8 +481,46 @@ impl AutoSuggester {
     }
 
     pub fn template() -> Self {
-        let mut sug = AutoSuggester::default();
+        let sug = gen_suggest!(
+            "NAME_ZH" => "#{NAME_ZH()}",
+            "NAME_EN" => "#{NAME_EN()}",
+            "NUM" => "#{NUM()}",
+            "NUM_STR" => "#{NUM_STR()}",
+            "HEX" => "#{HEX()}",
+            "STR" => "#{STR()}",
+            "EMAIL" => "#{EMAIL()}",
+            "USERNAME" => "#{USERNAME()}",
+            "IPV4" => "#{IPV4()}",
+            "IPV6" => "#{IPV6()}",
+            "MAC" => "#{MAC()}",
+            "USERAGENT" => "#{USERAGENT()}",
+            "PASSWORD" => "#{PASSWORD()}",
 
+            "UUID" => "#{UUID()}",
+            "UUID_SIMPLE" => "#{UUID_SIMPLE()}",
+
+            "NOW" => "#{NOW()}",
+            "DATE_BEFORE" => "#{DATE_BEFORE()}",
+            "DATE_AFTER" => "#{DATE_AFTER()}",
+            "DATE" => "#{DATE()}",
+            "DATE_ADD" => "#{DATE_ADD()}",
+
+            "AES_ECB_EN" => "#{AES_ECB_EN()}",
+            "AES_ECB_DE" => "#{AES_ECB_DE()}",
+            "AES_CBC_EN" => "#{AES_CBC_EN()}",
+            "AES_CBC_DE" => "#{AES_CBC_DE()}",
+            "AES_CTR_EN" => "#{AES_CTR_EN()}",
+            "AES_CTR_DE" => "#{AES_CTR_DE()}",
+
+            "BASE64_EN" => "#{BASE64_EN()}",
+            "BASE64_DE" => "#{BASE64_DE()}",
+
+            "base64Encode" => "base64Encode",
+            "AesEcbEnc" => "AesEcbEnc",
+            "AesCbcEnc" => "AesCbcEnc",
+            "AesCtrEnc" => "AesCtrEnc",
+            "INT" => "INT"
+        );
         sug
     }
 
