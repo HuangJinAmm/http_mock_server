@@ -287,13 +287,13 @@ pub struct PreResponse {
     pub code: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Default, Clone,Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Default, Clone, Debug)]
 pub struct MockData {
     pub req: ReqMockData,
     pub resp: RspMockData,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq,Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug)]
 pub enum BodyType {
     Schema,
     Json,
@@ -308,7 +308,7 @@ impl BodyType {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone,Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct ReqMockData {
     pub remark: String,
     pub path: String,
@@ -331,7 +331,7 @@ impl Default for ReqMockData {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Default, Clone,Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Default, Clone, Debug)]
 pub struct RspMockData {
     pub is_proxy: bool,
     pub dist_url: String,

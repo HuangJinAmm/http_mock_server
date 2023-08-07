@@ -2,9 +2,7 @@
 use regex::Regex;
 use serde_json::Value;
 
-use crate::{
-    matchers::distance_for,
-};
+use crate::matchers::distance_for;
 
 pub trait ValueComparator<S, T> {
     fn matches(&self, mock_value: &S, req_value: &T) -> bool;
@@ -15,10 +13,9 @@ pub trait ValueComparator<S, T> {
 pub struct JsonSchemaMatchComparator {}
 
 impl JsonSchemaMatchComparator {
-
     pub fn new() -> Self {
         Self {}
-    } 
+    }
 }
 
 impl ValueComparator<Value, Value> for JsonSchemaMatchComparator {
@@ -35,18 +32,15 @@ impl ValueComparator<Value, Value> for JsonSchemaMatchComparator {
     }
 }
 
-
-pub struct  JSONRegexMatchComparator {
-}
+pub struct JSONRegexMatchComparator {}
 
 impl JSONRegexMatchComparator {
-    
     pub fn new() -> Self {
         Self {}
     }
 }
 
-fn match_string_regex(regex:&str,value:&str) -> bool {
+fn match_string_regex(regex: &str, value: &str) -> bool {
     if regex == "*" {
         return true;
     }
@@ -57,94 +51,101 @@ fn match_string_regex(regex:&str,value:&str) -> bool {
     }
 }
 
-pub fn match_json_key(root:String,mock:&Value,req:&Value) -> Option<String>{
-    match(mock,req) {
-        (Value::String(mock_str),req_v) => {
-            log::debug!("mock:{}",mock_str);
-            log::debug!("req:{}",req);
-            match (mock_str.as_str(),req_v) {
-                ("*",_) => None,
-                (_,Value::String(req)) => {
+pub fn match_json_key(root: String, mock: &Value, req: &Value) -> Option<String> {
+    match (mock, req) {
+        (Value::String(mock_str), req_v) => {
+            log::debug!("mock:{}", mock_str);
+            log::debug!("req:{}", req);
+            match (mock_str.as_str(), req_v) {
+                ("*", _) => None,
+                (_, Value::String(req)) => {
                     if match_string_regex(mock_str, req) {
                         None
-                    }else{
-                        let msg:String = format!("{}的值不匹配，要求：{},实际{}", root, mock_str, req_v);
+                    } else {
+                        let msg: String =
+                            format!("{}的值不匹配，要求：{},实际{}", root, mock_str, req_v);
                         Some(msg)
                     }
-                },
-                (_,Value::Number(num)) => {
+                }
+                (_, Value::Number(num)) => {
                     if match_string_regex(mock_str, num.to_string().as_str()) {
                         None
-                    }else{
-                        let msg:String = format!("{}的值不匹配，要求：{},实际{}", root, mock_str, req_v);
+                    } else {
+                        let msg: String =
+                            format!("{}的值不匹配，要求：{},实际{}", root, mock_str, req_v);
                         Some(msg)
                     }
-                },
-                (_,Value::Bool(b)) => {
+                }
+                (_, Value::Bool(b)) => {
                     if match_string_regex(mock_str, b.to_string().as_str()) {
                         None
-                    }else{
-                        let msg:String = format!("{}的值不匹配，要求：{},实际{}", root, mock_str, req_v);
+                    } else {
+                        let msg: String =
+                            format!("{}的值不匹配，要求：{},实际{}", root, mock_str, req_v);
                         Some(msg)
                     }
-                },
+                }
                 _ => None,
             }
-
-        },
-        (Value::Number(mock_num),Value::Number(req_num)) => {
+        }
+        (Value::Number(mock_num), Value::Number(req_num)) => {
             if mock_num == req_num {
                 None
-            }else{
-                let msg:String = format!("{}的值不匹配，要求：{},实际{}", root, mock_num, req_num);
+            } else {
+                let msg: String = format!("{}的值不匹配，要求：{},实际{}", root, mock_num, req_num);
                 Some(msg)
             }
-        },
-        (Value::Bool(mock_bool),Value::Bool(req_bool)) => {
+        }
+        (Value::Bool(mock_bool), Value::Bool(req_bool)) => {
             if mock_bool == req_bool {
                 None
-            }else{
-                let msg:String = format!("{}的值不匹配，要求：{},实际{}", root, mock_bool, req_bool);
+            } else {
+                let msg: String =
+                    format!("{}的值不匹配，要求：{},实际{}", root, mock_bool, req_bool);
                 Some(msg)
             }
-        },
-        (Value::Null,Value::Null) =>{None},
-        (Value::Array(mock_array),Value::Array(req_array)) => {
+        }
+        (Value::Null, Value::Null) => None,
+        (Value::Array(mock_array), Value::Array(req_array)) => {
             if req_array.len() != mock_array.len() {
-                let msg:String = format!("{}的值不匹配，要求：{},实际{}", root,mock_array.len(), req_array.len());
+                let msg: String = format!(
+                    "{}的值不匹配，要求：{},实际{}",
+                    root,
+                    mock_array.len(),
+                    req_array.len()
+                );
                 Some(msg)
             } else {
-                for (mock,req) in mock_array.iter().zip(req_array.iter()) {
+                for (mock, req) in mock_array.iter().zip(req_array.iter()) {
                     if let Some(msg) = match_json_key(root.clone(), mock, req) {
                         return Some(msg);
                     }
                 }
                 None
             }
-        },
-        (Value::Object(mock_obj),Value::Object(req_obj)) => {
-            mock_obj.iter().find_map(|(mock_key,value)|{
+        }
+        (Value::Object(mock_obj), Value::Object(req_obj)) => {
+            mock_obj.iter().find_map(|(mock_key, value)| {
                 let mut sub_root = root.clone();
                 sub_root.push_str(mock_key);
                 if let Some(req_clone) = req_obj.get(mock_key) {
-                    match_json_key(sub_root,value, req_clone)
+                    match_json_key(sub_root, value, req_clone)
                 } else {
-                    let msg:String = format!("{}的值不匹配，要求：{},不存在", root, mock_key);
+                    let msg: String = format!("{}的值不匹配，要求：{},不存在", root, mock_key);
                     Some(msg)
                 }
             })
-        },
-        (_,_) => {None}
+        }
+        (_, _) => None,
     }
 }
 
 impl ValueComparator<Value, Value> for JSONRegexMatchComparator {
-
     fn matches(&self, mock_value: &Value, req_value: &Value) -> bool {
         log::debug!("JsonRegexMatchComparator执行");
         let root = "$".to_string();
         let res = match_json_key(root, mock_value, req_value).is_none();
-        log::debug!("JsonRegexMatchComparator执行结果:{}",res);
+        log::debug!("JsonRegexMatchComparator执行结果:{}", res);
         res
     }
 
@@ -153,7 +154,6 @@ impl ValueComparator<Value, Value> for JSONRegexMatchComparator {
     }
 
     fn distance(&self, mock_value: &Option<&Value>, req_value: &Option<&Value>) -> usize {
-
         distance_for(mock_value, req_value)
     }
 }
@@ -288,7 +288,7 @@ impl ValueComparator<String, String> for StringRegexMatchComparator {
     fn matches(&self, mock_value: &String, req_value: &String) -> bool {
         log::debug!("StringRegexMatchComparator 执行");
         let res = match_string_regex(mock_value, req_value);
-        log::debug!("StringRegexMatchComparator 执行结果：{}",res);
+        log::debug!("StringRegexMatchComparator 执行结果：{}", res);
         res
     }
 
@@ -369,9 +369,11 @@ mod test {
     use serde_json::json;
 
     use crate::matchers::comparators::{
-        AnyValueComparator, 
+        AnyValueComparator,
         // JSONContainsMatchComparator, JSONExactMatchComparator,
-        StringContainsMatchComparator, StringExactMatchComparator, StringRegexMatchComparator,
+        StringContainsMatchComparator,
+        StringExactMatchComparator,
+        StringRegexMatchComparator,
         ValueComparator,
     };
     use regex::Regex;
@@ -484,7 +486,7 @@ mod test {
         use super::match_string_regex;
 
         let r = match_string_regex("^\\d{4}-\\d{2}-\\d{2}$", "2014-01-01");
-        println!("{}",r);
+        println!("{}", r);
     }
 
     #[test]
@@ -493,8 +495,8 @@ mod test {
         let mock = json!({ "name" : "P.+","other":"*" });
         let req = json!({ "name" : "Peter", "other1" : { "human" : { "surname" : "Griffin" }}});
         let root = "$$".to_string();
-        let r = match_json_key(root,&mock,& req); 
-        println!("{:#?}",r);
+        let r = match_json_key(root, &mock, &req);
+        println!("{:#?}", r);
     }
 
     #[test]
@@ -524,77 +526,75 @@ mod test {
     #[test]
     fn test_json_schema() {
         let s = json!({
-            "description": "A product from Acme's catalog",
-            "type": "object",
-            "properties": {
-              "productId": {
-                "description": "The unique identifier for a product",
-                "type": "integer"
-              },
-              "productName": {
-                "description": "Name of the product",
+          "description": "A product from Acme's catalog",
+          "type": "object",
+          "properties": {
+            "productId": {
+              "description": "The unique identifier for a product",
+              "type": "integer"
+            },
+            "productName": {
+              "description": "Name of the product",
+              "type": "string"
+            },
+            "price": {
+              "description": "The price of the product",
+              "type": "number",
+              "exclusiveMinimum": 10
+            },
+            "tags": {
+              "description": "Tags for the product",
+              "type": "array",
+              "items": {
                 "type": "string"
               },
-              "price": {
-                "description": "The price of the product",
-                "type": "number",
-                "exclusiveMinimum": 10
-              },
-              "tags": {
-                "description": "Tags for the product",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "minItems": 1,
-                "uniqueItems": true
-              },
-              "dimensions": {
-                "type": "object",
-                "properties": {
-                  "length": {
-                    "type": "number"
-                  },
-                  "width": {
-                    "type": "number"
-                  },
-                  "height": {
-                    "type": "number"
-                  }
-                },
-                "required": [ "length", "width", "height" ]
-              }
+              "minItems": 1,
+              "uniqueItems": true
             },
-            "required": [ "productId", "productName", "price" ]
-          });
-
-          let j = json!({
-            "productId": 1,
-            "productName": "An ice sculpture",
-            "tags": [ "cold", "ice" ],
             "dimensions": {
-              "length": 7.0,
-              "width": 12.0,
-              "height": 9.5
+              "type": "object",
+              "properties": {
+                "length": {
+                  "type": "number"
+                },
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                }
+              },
+              "required": [ "length", "width", "height" ]
             }
-          });
-          let cs = jsonschema::JSONSchema::compile(&s);
-          match cs {
-            Ok(js) => {
-                match js.validate(&j) {
-                    Ok(rs) => {},
-                    Err(e) => {
-                        for error in e {
-                            println!("Validation error: {}", error);
-                            println!("Instance path: {}", error.instance_path);
-                        }
-                    },
+          },
+          "required": [ "productId", "productName", "price" ]
+        });
+
+        let j = json!({
+          "productId": 1,
+          "productName": "An ice sculpture",
+          "tags": [ "cold", "ice" ],
+          "dimensions": {
+            "length": 7.0,
+            "width": 12.0,
+            "height": 9.5
+          }
+        });
+        let cs = jsonschema::JSONSchema::compile(&s);
+        match cs {
+            Ok(js) => match js.validate(&j) {
+                Ok(rs) => {}
+                Err(e) => {
+                    for error in e {
+                        println!("Validation error: {}", error);
+                        println!("Instance path: {}", error.instance_path);
+                    }
                 }
             },
             Err(e) => {
-                println!("schema error: {}",e);
+                println!("schema error: {}", e);
                 println!("schema path: {}", e.instance_path);
-            },
+            }
         }
     }
 }

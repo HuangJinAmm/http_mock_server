@@ -10,7 +10,7 @@ async fn main() {
     // }
     // egui_logger::init().unwrap();
     tracing_subscriber::fmt::init();
-    log::set_max_level(log::LevelFilter::Debug); 
+    log::set_max_level(log::LevelFilter::Debug);
     log::info!("启动....");
     let _ = server::serve("127.0.0.1:3000").await;
 }

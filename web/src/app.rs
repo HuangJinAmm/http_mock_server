@@ -61,9 +61,6 @@ pub static TOKIO_RT: Lazy<Runtime> = Lazy::new(|| {
 pub struct TemplateApp {
     show_log: bool,
 
-    test: String,
-    // text: DockUi
-    // pub tabs: HashSet<String>,
     pub tree: Tree<String>,
     tree_ui: TreeUi,
     api_data: ApiContext,
@@ -81,7 +78,6 @@ impl Default for TemplateApp {
         api_context.insert_collecton(0, "".to_owned());
         Self {
             show_log: false,
-            test: "".to_owned(),
             tree_ui: TreeUi::new(),
             // tabs:vec![],
             tree: Tree::new(vec![]),
@@ -141,7 +137,7 @@ impl TemplateApp {
                         if !mock.req.path.is_empty() && mock.resp.body.is_some() {
                             match mock_server.add(mock) {
                                 Ok(_) => {
-                                    debug!("id{}初始添加成功", id );
+                                    debug!("id{}初始添加成功", id);
                                 }
                                 Err(e) => {
                                     //ignore

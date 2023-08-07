@@ -26,7 +26,9 @@ pub struct RequestUi {
 
 impl Default for RequestUi {
     fn default() -> Self {
-        Self { editor: TextEdit::new_json() }
+        Self {
+            editor: TextEdit::new_json(),
+        }
     }
 }
 
@@ -221,7 +223,9 @@ pub struct ResponseUi {
 
 impl Default for ResponseUi {
     fn default() -> Self {
-        Self { editor: TextEdit::new_template()}
+        Self {
+            editor: TextEdit::new_template(),
+        }
     }
 }
 

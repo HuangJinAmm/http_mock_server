@@ -17,7 +17,8 @@ pub(crate) trait MultiValueTarget<T, U> {
 }
 
 pub(crate) trait KeyValueTarget<K, V> {
-    fn parse_from_request<'a>(&self, req: &'a HttpMockRequest) -> Option<&'a HashMap<K, Option<V>>>;
+    fn parse_from_request<'a>(&self, req: &'a HttpMockRequest)
+        -> Option<&'a HashMap<K, Option<V>>>;
 }
 // *************************************************************************************
 // StringBodyTarget
@@ -48,7 +49,7 @@ impl JSONSchemaTarget {
 impl ValueTarget<Value> for JSONSchemaTarget {
     fn parse_from_request(&self, req: &HttpMockRequest) -> Option<Value> {
         let body = req.body_schema.as_ref();
-        if body.is_none() || body.unwrap().is_empty(){
+        if body.is_none() || body.unwrap().is_empty() {
             return None;
         }
         let body_vec = body.unwrap();
@@ -56,11 +57,11 @@ impl ValueTarget<Value> for JSONSchemaTarget {
             // let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
             // let dealed_body = re.replace_all(&body_str, "");
             match serde_json::from_str(body_str.as_ref()) {
-                Ok(v) => {return Some(v)},
+                Ok(v) => return Some(v),
                 Err(e) => {
-                    log::trace!("paser json error:{}",e);
+                    log::trace!("paser json error:{}", e);
                     return None;
-                },
+                }
             }
         }
         match serde_json::from_slice(body.unwrap()) {
@@ -86,7 +87,7 @@ impl JSONBodyTarget {
 impl ValueTarget<Value> for JSONBodyTarget {
     fn parse_from_request(&self, req: &HttpMockRequest) -> Option<Value> {
         let body = req.body.as_ref();
-        if body.is_none() || body.unwrap().is_empty(){
+        if body.is_none() || body.unwrap().is_empty() {
             return None;
         }
         let body_vec = body.unwrap();
@@ -94,11 +95,11 @@ impl ValueTarget<Value> for JSONBodyTarget {
             // let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
             // let dealed_body = re.replace_all(&body_str, "");
             match serde_json::from_str(body_str.as_ref()) {
-                Ok(v) => {return Some(v)},
+                Ok(v) => return Some(v),
                 Err(e) => {
-                    log::trace!("paser json error:{}",e);
+                    log::trace!("paser json error:{}", e);
                     return None;
-                },
+                }
             }
         }
         match serde_json::from_slice(body.unwrap()) {

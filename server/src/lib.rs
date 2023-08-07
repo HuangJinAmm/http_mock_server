@@ -1,19 +1,17 @@
+pub mod aes_tool;
 pub mod common;
 mod error;
 mod matchers;
 pub mod template;
-pub mod aes_tool;
 
 use std::{
-    borrow::{BorrowMut},
+    borrow::BorrowMut,
     io::Error,
     sync::{Arc, RwLock},
 };
 
-use common::{
-    data::{HttpMockRequest, MockServerHttpResponse},
-};
-use poem::{Result, middleware::Cors, endpoint::StaticFilesEndpoint, web::Json, post};
+use common::data::{HttpMockRequest, MockServerHttpResponse};
+use poem::{endpoint::StaticFilesEndpoint, middleware::Cors, post, web::Json, Result};
 use poem::{
     get, handler,
     http::{Method, Uri},
@@ -22,30 +20,30 @@ use poem::{
     Body, EndpointExt, Request, RequestBody, Response, Route, RouteScheme, Server,
 };
 
-use crate::common::{MockServer, MOCK_SERVER, handle_mock_requset, mock::MockDefine};
+use crate::common::{handle_mock_requset, mock::MockDefine, MockServer, MOCK_SERVER};
 
-
-pub async fn serve(path:&str) -> Result<(), Error> {
+pub async fn serve(path: &str) -> Result<(), Error> {
     let cors = Cors::default();
-    let controller = get(mock_handle).put(mock_handle)
-                                    .delete(mock_handle)
-                                    .options(mock_handle)
-                                    .delete(mock_handle)
-                                    .trace(mock_handle)
-                                    .post(mock_handle);
+    let controller = get(mock_handle)
+        .put(mock_handle)
+        .delete(mock_handle)
+        .options(mock_handle)
+        .delete(mock_handle)
+        .trace(mock_handle)
+        .post(mock_handle);
     let app = Route::new()
         .at("/mock_list", get(list_all))
         .at("/mock_add", post(add_mock))
-        .at("/mock_remove",post(remove_mock))
+        .at("/mock_remove", post(remove_mock))
         .nest(
             "/mock_info",
             StaticFilesEndpoint::new("./docs").index_file("index.html"),
         )
-        .at("/*", controller).with(cors).with(Tracing);
+        .at("/*", controller)
+        .with(cors)
+        .with(Tracing);
     log::info!("启动服务...");
-    Server::new(TcpListener::bind(path))
-        .run(app)
-        .await
+    Server::new(TcpListener::bind(path)).run(app).await
 }
 
 #[handler]

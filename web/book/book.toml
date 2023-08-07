@@ -1,0 +1,12 @@
+[book]
+authors = ["Mocks"]
+language = "en"
+multilingual = true
+src = "src"
+title = "Mock服务器"
+
+[build]
+build-dir = "book"
+create-missing = false
+extra-watch-dirs = []
+use-default-preprocessors = true

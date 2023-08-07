@@ -1,20 +1,18 @@
-
 use std::collections::BTreeMap;
 use std::error::Error;
-use std::fmt::{Display, Debug};
+use std::fmt::{Debug, Display};
 
 use async_trait::async_trait;
 use log::debug;
+use minijinja::context;
 use minijinja::value::Value;
-use minijinja::{context};
 
 use serde_json::Value as JValue;
-
 
 use crate::matchers::comparators::{match_json_key, ValueComparator};
 use crate::matchers::targets::{MultiValueTarget, ValueTarget};
 use crate::matchers::{diff_str, Matcher};
-use crate::template::{TEMP_ENV, rander_template};
+use crate::template::{rander_template, TEMP_ENV};
 
 use super::data::{HttpMockRequest, Mismatch, MockServerHttpResponse, Reason, Tokenizer};
 use super::mock::MockDefine;
@@ -67,8 +65,8 @@ impl MockFilter for RequestFilter {
             .iter()
             .any(|matcher| matcher.matches(req, mock));
 
-        log::debug!("请求数据匹配:{}",matched);
-        log::debug!("请求Body匹配:{}",body_matcher);
+        log::debug!("请求数据匹配:{}", matched);
+        log::debug!("请求Body匹配:{}", body_matcher);
         if matched && body_matcher {
             let resp;
             if let Some(_url) = filter_wrapper.mock_define.relay_url.clone() {
@@ -78,25 +76,27 @@ impl MockFilter for RequestFilter {
             }
             filter_wrapper.resp = resp;
         } else {
-            let mut miss:Vec<Mismatch> = Vec::new();
+            let mut miss: Vec<Mismatch> = Vec::new();
             if !matched {
-                let mut miss_query =
-                    self.mathcher
-                        .iter()
-                        .fold(Vec::new(), |mut mismatchs: Vec<Mismatch>, matcher| {
-                            let mut sub_mis = matcher.mismatches(req, mock);
-                            mismatchs.append(&mut sub_mis);
-                            mismatchs
-                        });
+                let mut miss_query = self.mathcher.iter().fold(
+                    Vec::new(),
+                    |mut mismatchs: Vec<Mismatch>, matcher| {
+                        let mut sub_mis = matcher.mismatches(req, mock);
+                        mismatchs.append(&mut sub_mis);
+                        mismatchs
+                    },
+                );
                 miss.append(&mut miss_query);
             }
             if !body_matcher {
-                let mut miss_body = self.body_mather.iter()
-                            .fold(Vec::new(), |mut mismatchs:Vec<Mismatch>,matcher|{
-                            let mut sub_mis = matcher.mismatches(req, mock);
-                            mismatchs.append(&mut sub_mis);
-                            mismatchs
-                });
+                let mut miss_body = self.body_mather.iter().fold(
+                    Vec::new(),
+                    |mut mismatchs: Vec<Mismatch>, matcher| {
+                        let mut sub_mis = matcher.mismatches(req, mock);
+                        mismatchs.append(&mut sub_mis);
+                        mismatchs
+                    },
+                );
                 miss.append(&mut miss_body);
             }
             if !filter_wrapper.is_failed() {
@@ -114,7 +114,7 @@ pub struct JinjaTemplateHandler {}
 #[async_trait]
 impl MockHandler for JinjaTemplateHandler {
     async fn handle(&self, req: &mut MockFilterWrapper) -> Option<MockServerHttpResponse> {
-        let mut ret_mock_resp:Option<MockServerHttpResponse> = None;
+        let mut ret_mock_resp: Option<MockServerHttpResponse> = None;
         let start = std::time::SystemTime::now();
 
         log::debug!("JinjaTemplateHandler 执行");
@@ -139,12 +139,18 @@ impl MockHandler for JinjaTemplateHandler {
         } = request;
 
         let temp_ctx = context!(path, url, body, method, headers, query_params);
-        log::debug!("获取到的局部变量{:#?}",&temp_ctx);
+        log::debug!("获取到的局部变量{:#?}", &temp_ctx);
         if let Ok(env) = TEMP_ENV.read() {
             //处理body模板
-            if let Some(body_tmp) = req.mock_define.resp.body.clone().map(|b|String::from_utf8(b).unwrap_or_default()) {
+            if let Some(body_tmp) = req
+                .mock_define
+                .resp
+                .body
+                .clone()
+                .map(|b| String::from_utf8(b).unwrap_or_default())
+            {
                 let mut mock_resp = req.mock_define.resp.clone();
-                let rendered = match env.render_str(&body_tmp,temp_ctx.clone()) {
+                let rendered = match env.render_str(&body_tmp, temp_ctx.clone()) {
                     Ok(s) => s,
                     Err(e) => e.to_string(),
                 };
@@ -153,15 +159,17 @@ impl MockHandler for JinjaTemplateHandler {
             }
 
             //处理header的模板
-            if let Some(mock_headers) = req.mock_define.resp.headers.clone(){
-                let dealed_headers:Vec<(String,String)> = mock_headers.into_iter()
-                    .map(|(key,val)|{
-                        let rander_header = match env.render_str(&val,temp_ctx.clone()) {
+            if let Some(mock_headers) = req.mock_define.resp.headers.clone() {
+                let dealed_headers: Vec<(String, String)> = mock_headers
+                    .into_iter()
+                    .map(|(key, val)| {
+                        let rander_header = match env.render_str(&val, temp_ctx.clone()) {
                             Ok(s) => s,
                             Err(e) => e.to_string(),
                         };
-                        (key,rander_header)
-                    }).collect();
+                        (key, rander_header)
+                    })
+                    .collect();
                 if let Some(ret_mock_resp_c) = ret_mock_resp.as_mut() {
                     ret_mock_resp_c.headers = Some(dealed_headers);
                 }
@@ -174,7 +182,7 @@ impl MockHandler for JinjaTemplateHandler {
             if let Some(sleep) = delay.checked_sub(end) {
                 if sleep.as_millis() > 120 {
                     // thread::sleep(sleep);
-                    log::debug!("延时：{:#?}",&sleep);
+                    log::debug!("延时：{:#?}", &sleep);
                     let _ = tokio::time::sleep(sleep).await;
                 }
             }
@@ -192,21 +200,27 @@ impl MockHandler for RelayServerHandler {
         let client = reqwest::Client::new();
         let mut req_clone = req.req.clone();
         if let Some(redict_url) = req.mock_define.relay_url.clone() {
-            log::debug!("转发地址：{}",&redict_url);
+            log::debug!("转发地址：{}", &redict_url);
             req_clone.path = redict_url;
-            let real_req = req_clone.into(); 
+            let real_req = req_clone.into();
             let resp = client.execute(real_req);
             match resp.await {
                 Ok(r) => {
                     let status = Some(r.status().as_u16());
-                    log::debug!("转发响应状态：{:#?}",&status);
+                    log::debug!("转发响应状态：{:#?}", &status);
                     let mut headers: Vec<(String, String)> = Vec::new();
                     for (hn, hv) in r.headers().iter() {
                         let hns = hn.to_string();
                         let hvs = hv.to_str().unwrap().to_string();
                         headers.push((hns, hvs));
                     }
-                    let body = Some(r.text().await.unwrap_or_else(|e|{e.to_string()}).as_bytes().to_vec());
+                    let body = Some(
+                        r.text()
+                            .await
+                            .unwrap_or_else(|e| e.to_string())
+                            .as_bytes()
+                            .to_vec(),
+                    );
                     Some(MockServerHttpResponse {
                         status,
                         headers: Some(headers),
@@ -215,7 +229,7 @@ impl MockHandler for RelayServerHandler {
                     })
                 }
                 Err(e) => {
-                    log::error!("转发响应错误:{:#?}",&e);
+                    log::error!("转发响应错误:{:#?}", &e);
                     let body = Some(e.to_string().as_bytes().to_vec());
                     Some(MockServerHttpResponse {
                         status: Some(500),
@@ -232,7 +246,6 @@ impl MockHandler for RelayServerHandler {
 }
 
 pub struct DoNothingHandler {}
-
 
 #[async_trait]
 impl MockHandler for DoNothingHandler {
@@ -253,27 +266,28 @@ impl Matcher for RegexValueMatcher {
     fn matches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> bool {
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.target.parse_from_request(mock);
-        log::debug!("MockValue:{:#?}",&mock_value);
-        log::debug!("ReqValue:{:#?}",&req_value);
+        log::debug!("MockValue:{:#?}", &mock_value);
+        log::debug!("ReqValue:{:#?}", &req_value);
         // let mock_body = mock.body.clone().unwrap();
         // dbg!(String::from_utf8(mock_body).unwrap());
         // dbg!(&mock_value);
         match (mock_value, req_value) {
-                    (None, None) => {
-                            return true;
-                    },
-                    (None,Some(_)) => {
-                        return false;
-                    }
-                    (Some(_), None) => return false,
-                    (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
-                }
+            (None, None) => {
+                return true;
+            }
+            (None, Some(_)) => {
+                return false;
+            }
+            (Some(_), None) => return false,
+            (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
+        }
     }
 
     fn distance(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> usize {
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.target.parse_from_request(mock);
-        self.comparator.distance(&mock_value.as_ref(), &req_value.as_ref())
+        self.comparator
+            .distance(&mock_value.as_ref(), &req_value.as_ref())
     }
 
     fn mismatches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> Vec<Mismatch> {
@@ -298,7 +312,7 @@ impl Matcher for RegexValueMatcher {
                 };
                 mis_vec.push(mis_match);
                 mis_vec
-            },
+            }
             (Some(m), None) => {
                 let mut mis_vec = Vec::new();
                 let mis_match = Mismatch {
@@ -351,27 +365,28 @@ pub(crate) struct JsonSchemaMatcher {
 
 impl Matcher for JsonSchemaMatcher {
     fn matches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> bool {
-        debug!("{}","JsonSchemaMatcher");
+        debug!("{}", "JsonSchemaMatcher");
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.source.parse_from_request(mock);
-        debug!("req:{:?}",&req_value);
-        debug!("mock:{:?}",&mock_value);
+        debug!("req:{:?}", &req_value);
+        debug!("mock:{:?}", &mock_value);
         match (mock_value, req_value) {
-                    (None, None) => {
-                            return true;
-                    },
-                    (None,Some(_)) => {
-                        return false;
-                    }
-                    (Some(_), None) => return false,
-                    (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
-                }
+            (None, None) => {
+                return true;
+            }
+            (None, Some(_)) => {
+                return false;
+            }
+            (Some(_), None) => return false,
+            (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
+        }
     }
 
     fn distance(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> usize {
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.source.parse_from_request(mock);
-        self.comparator.distance(&mock_value.as_ref(), &req_value.as_ref())
+        self.comparator
+            .distance(&mock_value.as_ref(), &req_value.as_ref())
     }
 
     fn mismatches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> Vec<Mismatch> {
@@ -396,7 +411,7 @@ impl Matcher for JsonSchemaMatcher {
                 };
                 mis_vec.push(mis_match);
                 mis_vec
-            },
+            }
             (Some(m), None) => {
                 let mut mis_vec = Vec::new();
                 let mis_match = Mismatch {
@@ -418,22 +433,27 @@ impl Matcher for JsonSchemaMatcher {
             (Some(mock), Some(req)) => {
                 let mut mis_vec = Vec::new();
                 let result = match jsonschema::JSONSchema::compile(&mock) {
-                    Ok(j) => {
-                        match j.validate(&req) {
-                            Ok(_) => {
-                                "".to_owned() 
-                            },
-                            Err(err) => {
-                                let mut res = String::new();
-                                for e in err {
-                                    res.push_str(format!("匹配错误{},schema路径{},请求路径{}",e.instance,e.schema_path ,e.instance_path).as_str());
-                                }
-                                res
-                            },
+                    Ok(j) => match j.validate(&req) {
+                        Ok(_) => "".to_owned(),
+                        Err(err) => {
+                            let mut res = String::new();
+                            for e in err {
+                                res.push_str(
+                                    format!(
+                                        "匹配错误{},schema路径{},请求路径{}",
+                                        e.instance, e.schema_path, e.instance_path
+                                    )
+                                    .as_str(),
+                                );
+                            }
+                            res
                         }
                     },
-                    Err(e) => format!("匹配错误{},schema路径{},请求路径{}",e.instance,e.schema_path ,e.instance_path) ,
-                }; 
+                    Err(e) => format!(
+                        "匹配错误{},schema路径{},请求路径{}",
+                        e.instance, e.schema_path, e.instance_path
+                    ),
+                };
                 let mis_match = Mismatch {
                     title: result,
                     reason: match self.with_reason {
@@ -449,7 +469,7 @@ impl Matcher for JsonSchemaMatcher {
                 };
                 mis_vec.push(mis_match);
                 mis_vec
-           }
+            }
         }
     }
 }
@@ -468,19 +488,19 @@ where
 
 impl<T> Matcher for SingleValueMatcher<T>
 where
-    T: Display+Debug,
+    T: Display + Debug,
 {
     fn matches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> bool {
         let req_value = self.target.parse_from_request(req);
         let mock_value = self.target.parse_from_request(mock);
-        log::debug!("MockValue:{:#?}",&mock_value);
-        log::debug!("ReqValue:{:#?}",&req_value);
+        log::debug!("MockValue:{:#?}", &mock_value);
+        log::debug!("ReqValue:{:#?}", &req_value);
         match (mock_value, req_value) {
-                    (None, Some(_)) => return false,
-                    (None, None) => return true,
-                    (Some(_), None) => return false,
-                    (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
-                }
+            (None, Some(_)) => return false,
+            (None, None) => return true,
+            (Some(_), None) => return false,
+            (Some(mock), Some(req)) => self.comparator.matches(&mock, &req),
+        }
     }
 
     fn distance(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> usize {
@@ -512,7 +532,7 @@ where
                 };
                 mis_vec.push(mis_match);
                 mis_vec
-            },
+            }
             (Some(m), None) => {
                 let mut mis_vec = Vec::new();
                 let mis_match = Mismatch {
@@ -660,30 +680,34 @@ where
         let req_values = self.target.parse_from_request(req).unwrap_or(Vec::new());
         let mock_values = self.target.parse_from_request(mock).unwrap_or(Vec::new());
         self.find_unmatched(&req_values, &mock_values)
-                        .into_iter()
-                        .map(|(k, v)| (k, v, self.find_best_match(&k, v, &req_values)))
-                        .map(|(k, v, best_match)| Mismatch {
-                            title: match v {
-                                None => format!("期望 {} 存在'{}'，实际不存在", self.entity_name, &k),
-                                Some(v) => format!("期望 {} 中的'{}' 的值为'{}',实际不存在", self.entity_name, &k, v),
-                            },
-                            reason: best_match.as_ref().map(|(bmk, bmv)| {
-                                Reason {
-                                    expected: match v {
-                                        None => format!("{}", k),
-                                        Some(v) => format!("{}={}", k, v),
-                                    },
-                                    actual: match bmv {
-                                        None => format!("{}", bmk),
-                                        Some(bmv) => format!("{}={}", bmk, bmv),
-                                    },
-                                    comparison: format!("key={}, value={}", self.key_comparator.name(), self.value_comparator.name()),
-                                    best_match: true,
-                                }
-                            }),
-                            diff: None,
-                        })
-                        .collect()
+            .into_iter()
+            .map(|(k, v)| (k, v, self.find_best_match(&k, v, &req_values)))
+            .map(|(k, v, best_match)| Mismatch {
+                title: match v {
+                    None => format!("期望 {} 存在'{}'，实际不存在", self.entity_name, &k),
+                    Some(v) => format!(
+                        "期望 {} 中的'{}' 的值为'{}',实际不存在",
+                        self.entity_name, &k, v
+                    ),
+                },
+                reason: best_match.as_ref().map(|(bmk, bmv)| Reason {
+                    expected: match v {
+                        None => format!("{}", k),
+                        Some(v) => format!("{}={}", k, v),
+                    },
+                    actual: match bmv {
+                        None => format!("{}", bmk),
+                        Some(bmv) => format!("{}={}", bmk, bmv),
+                    },
+                    comparison: format!(
+                        "key={}, value={}",
+                        self.key_comparator.name(),
+                        self.value_comparator.name()
+                    ),
+                    best_match: true,
+                }),
+                diff: None,
+            })
+            .collect()
     }
 }
-

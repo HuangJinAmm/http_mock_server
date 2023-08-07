@@ -4,7 +4,7 @@ use poem::web::IntoResponse;
 use poem::{FromRequest, Request, RequestBody, Result};
 use regex::Regex;
 use reqwest::header::HeaderName;
-use reqwest::{Method, Url, StatusCode, Body};
+use reqwest::{Body, Method, StatusCode, Url};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
@@ -20,7 +20,7 @@ pub struct HttpMockRequest {
     pub headers: Option<HashMap<String, String>>,
     pub query_params: Option<HashMap<String, String>>,
     pub body: Option<Vec<u8>>,
-    pub body_schema:Option<Vec<u8>>
+    pub body_schema: Option<Vec<u8>>,
 }
 
 #[poem::async_trait]
@@ -61,7 +61,7 @@ impl Into<reqwest::Request> for HttpMockRequest {
             headers,
             query_params,
             body,
-            body_schema
+            body_schema,
         } = self;
         let method = method.as_ref().unwrap_or(&"GET".to_string()).to_uppercase();
         let req_method = Method::from_bytes(method.as_bytes()).unwrap_or_default();
@@ -112,7 +112,7 @@ impl HttpMockRequest {
             headers: None,
             query_params: None,
             body: None,
-            body_schema:None
+            body_schema: None,
         }
     }
     pub fn method(&mut self, method: String) {
@@ -162,21 +162,20 @@ impl IntoResponse for MockServerHttpResponse {
             ..
         } = self;
         let builder = poem::Response::builder();
-        let status = StatusCode::from_u16(status.unwrap_or(200))
-                                    .unwrap_or(StatusCode::OK);
+        let status = StatusCode::from_u16(status.unwrap_or(200)).unwrap_or(StatusCode::OK);
         let builder = builder.status(status);
         let mut resp = builder.body(body.unwrap_or_default());
 
         let mut header_map = HeaderMap::new();
         if let Some(headers_vec) = headers {
-            for (key,val) in headers_vec {
+            for (key, val) in headers_vec {
                 if let Ok(hdr) = HeaderName::from_str(key.as_str()) {
                     let value = val.as_str();
                     let value = HeaderValue::from_str(value).unwrap();
                     header_map.append(hdr, value);
                 }
             }
-        } 
+        }
         *resp.headers_mut() = header_map;
         resp
     }

@@ -1,12 +1,6 @@
 //! Some common error types.
 
-use std::{
-    fmt::{Debug},
-};
-
-
-
-
+use std::fmt::Debug;
 
 /// A possible error value occurred when adding a route.
 #[derive(Debug, thiserror::Error, Eq, PartialEq)]

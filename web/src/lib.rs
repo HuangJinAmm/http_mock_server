@@ -7,6 +7,7 @@ pub mod history_db;
 pub mod request_data;
 pub mod ui;
 pub mod utils;
+pub mod book;
 pub use app::TemplateApp;
 use once_cell::sync::Lazy;
 

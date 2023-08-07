@@ -3,9 +3,7 @@ use std::fmt::Display;
 use serde_json::Value;
 use similar::{ChangeTag, TextDiff};
 
-use crate::common::data::{
-    Diff, DiffResult, HttpMockRequest, Mismatch, Tokenizer,
-};
+use crate::common::data::{Diff, DiffResult, HttpMockRequest, Mismatch, Tokenizer};
 
 pub(crate) mod comparators;
 // pub(crate) mod generic;
@@ -34,7 +32,7 @@ pub(crate) fn diff_str(base: &str, edit: &str, tokenizer: Tokenizer) -> DiffResu
     }
 }
 
-pub trait Matcher:Send+Sync {
+pub trait Matcher: Send + Sync {
     fn matches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> bool;
     fn distance(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> usize;
     fn mismatches(&self, req: &HttpMockRequest, mock: &HttpMockRequest) -> Vec<Mismatch>;
@@ -74,9 +72,9 @@ where
     levenshtein::levenshtein(&expected, &actual)
 }
 
-pub fn valid_json_schema(schema:&Value) -> Result<(),String> {
+pub fn valid_json_schema(schema: &Value) -> Result<(), String> {
     match jsonschema::JSONSchema::compile(schema) {
-        Ok(_) => {Ok(())},
-        Err(e) => {Err(e.to_string())},
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string()),
     }
 }

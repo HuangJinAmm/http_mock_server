@@ -62,6 +62,10 @@ impl TreeUi {
         }
     }
 
+    pub fn get_all_active_nodes_for_book(&self) -> Option<Vec<Vec<u64>>>{
+        todo!()
+    }
+
     pub fn get_all_active_nodes(&self) -> Option<Vec<u64>> {
         self.sub_node.list_all_subids(Some(true))
     }
@@ -307,6 +311,30 @@ impl TreeUiNode {
         // }
         self.sub_items.push(sub);
         true
+    }
+
+    #[inline]
+    fn has_subs(&self) -> bool {
+        self.sub_items.is_empty()
+    }
+
+    pub fn get_node_path(&self,id:u64) -> Option<Vec<u64>> {
+        let current_level = vec![self.id];
+        if self.id == id {
+            return Some(current_level); 
+        }
+        if self.has_subs() {
+            let mut sub_res = None;
+            for sub in &self.sub_items {
+                sub_res = sub.get_node_path(id);
+                if sub_res.is_some() && sub_res.as_ref().map(|f|f.is_empty()).unwrap() {
+                    sub_res = sub_res.map(|mut f| {f.push(self.id);f});
+                    break;
+                }
+            }
+            return sub_res;
+        }
+        None
     }
 
     pub fn find_node(&mut self, id: u64) -> Option<&mut TreeUiNode> {

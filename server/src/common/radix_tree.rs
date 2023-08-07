@@ -1,6 +1,4 @@
-use std::{
-    fmt::{self, Debug, Formatter},
-};
+use std::fmt::{self, Debug, Formatter};
 
 use regex::bytes::Regex;
 use smallvec::SmallVec;
