@@ -1,3 +1,4 @@
+use crate::book::build_book;
 use crate::history_db::add_new_version_mockinfo;
 use crate::{
     api_context::ApiContext,
@@ -281,6 +282,24 @@ impl eframe::App for TemplateApp {
                         }
                     }
                 });
+
+                if ui.button("build book").clicked() {
+                    let build_res = build_book(&self.tree_ui, &self.api_data);
+                    if let Ok(mut toast_w) = toast.lock() {
+                        match build_res {
+                            Ok(_) => {
+                                toast_w
+                                    .info(format!("build success!"))
+                                    .set_duration(Some(Duration::from_secs(5)));
+                            }
+                            Err(e) => {
+                                toast_w
+                                    .error(format!("build error:{}", e.to_string()))
+                                    .set_duration(Some(Duration::from_secs(5)));
+                            }
+                        }
+                    }
+                }
             });
         });
 

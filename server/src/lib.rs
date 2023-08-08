@@ -37,7 +37,7 @@ pub async fn serve(path: &str) -> Result<(), Error> {
         .at("/mock_remove", post(remove_mock))
         .nest(
             "/mock_info",
-            StaticFilesEndpoint::new("./docs").index_file("index.html"),
+            StaticFilesEndpoint::new("./docs/book").index_file("index.html"),
         )
         .at("/*", controller)
         .with(cors)

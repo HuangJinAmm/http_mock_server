@@ -62,8 +62,16 @@ impl TreeUi {
         }
     }
 
-    pub fn get_all_active_nodes_for_book(&self) -> Option<Vec<Vec<u64>>>{
-        todo!()
+    pub fn get_sub_nodes(&self) -> Vec<&TreeUiNode> {
+        self.sub_node.sub_items.iter().collect()
+    }
+
+    pub fn find_sub_node(&self, id: u64) -> Option<&TreeUiNode> {
+        self.sub_node.sub_items.iter().find(|node| node.id == id)
+    }
+
+    pub fn get_node_path(&self, id: u64) -> Option<Vec<u64>> {
+        self.sub_node.get_node_path(id)
     }
 
     pub fn get_all_active_nodes(&self) -> Option<Vec<u64>> {
@@ -280,10 +288,10 @@ impl TreeUi {
 // #[cfg_attr(feature = "serde", derive(serde::Deserialize,serde::Serialize))]
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct TreeUiNode {
-    id: u64,
-    title: String,
-    active: bool,
-    node_type: NodeType,
+    pub id: u64,
+    pub title: String,
+    pub active: bool,
+    pub node_type: NodeType,
     // sub_items: BTreeMap<u64, TreeUiNode>,
     sub_items: Vec<TreeUiNode>,
     #[serde(skip)]
@@ -318,23 +326,31 @@ impl TreeUiNode {
         self.sub_items.is_empty()
     }
 
-    pub fn get_node_path(&self,id:u64) -> Option<Vec<u64>> {
+    pub fn get_node_path(&self, id: u64) -> Option<Vec<u64>> {
         let current_level = vec![self.id];
         if self.id == id {
-            return Some(current_level); 
+            return Some(current_level);
         }
         if self.has_subs() {
             let mut sub_res = None;
             for sub in &self.sub_items {
                 sub_res = sub.get_node_path(id);
-                if sub_res.is_some() && sub_res.as_ref().map(|f|f.is_empty()).unwrap() {
-                    sub_res = sub_res.map(|mut f| {f.push(self.id);f});
+
+                if sub_res.as_ref().is_some_and(|f| !f.is_empty()) {
+                    sub_res = sub_res.map(|mut f| {
+                        f.push(self.id);
+                        f
+                    });
                     break;
                 }
             }
             return sub_res;
         }
         None
+    }
+
+    pub fn get_sub_nodes(&self) -> Vec<&TreeUiNode> {
+        self.sub_items.iter().collect()
     }
 
     pub fn find_node(&mut self, id: u64) -> Option<&mut TreeUiNode> {
