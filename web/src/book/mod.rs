@@ -2,8 +2,12 @@ use mdbook::book::{Chapter, SectionNumber, Summary};
 use mdbook::config::Config;
 use mdbook::{BookItem, MDBook};
 use minijinja::context;
+use server::template::TEMP_ENV;
 
+use crate::PORT;
+use crate::LOCAL_IP;
 use crate::api_context::ApiContext;
+use crate::component::header_ui::SelectKeyValueItem;
 use crate::component::tree_ui::{TreeUi, TreeUiNode, NodeType};
 use crate::request_data::MockData;
 
@@ -27,13 +31,14 @@ pub fn build_book(tree_ui: &TreeUi, api: &ApiContext) -> Result<(), anyhow::Erro
     for level_one_node in tree_ui.get_sub_nodes() {
         let level_one_chapter = gen_chapter(vec![num], level_one_node, api);
         book.book.push_item(BookItem::Chapter(level_one_chapter));
+        book.book.push_item(mdbook::BookItem::Separator);
         num += 1;
     }
     book.build()
 }
 
 fn gen_chapter(num: Vec<u32>, node: &TreeUiNode, api: &ApiContext) -> Chapter {
-    let mut count_vec = num.clone();
+    let count_vec = num.clone();
     let mut p = gen_node_chapter(num, node, api);
     let mut count = 1;
     for sub in node.get_sub_nodes() {
@@ -44,86 +49,89 @@ fn gen_chapter(num: Vec<u32>, node: &TreeUiNode, api: &ApiContext) -> Chapter {
         p.sub_items.push(mdbook::BookItem::Chapter(sub_chapter));
         count += 1;
     }
-    p.sub_items.push(mdbook::BookItem::Separator);
     p
 }
 
 fn rander_mockdata(mock:&MockData) -> String {
 
-    let r_headers:Vec<(String,String)> = mock.req.headers.iter().filter(|h|h.selected).map(|h|(h.key.clone(),h.value.clone())).collect();
+    let r_headers:Vec<&SelectKeyValueItem> = mock.req.headers.iter().filter(|h|h.selected && !h.key.is_empty()).collect();
+    let p_headers:Vec<&SelectKeyValueItem> = mock.resp.headers.iter().filter(|h|h.selected && !h.key.is_empty()).collect();
+    let server;
+    if !mock.resp.is_proxy {
+        server = format!("http://{}:{}{}",LOCAL_IP.as_str(),PORT.as_str(),mock.req.path); 
+    } else {
+        server = format!("http://{}:{}{} 或者 {}{}",LOCAL_IP.as_str(),PORT.as_str(),mock.req.path,mock.resp.dist_url.clone(),mock.req.path);
+    }
 
     let ctx = context! {
         req_doc => mock.req.remark,
         req_method => mock.req.method.to_string(),
-        req_url => mock.req.path,
+        req_url => server, 
         req_headers => r_headers,
-        req_body => mock.req.body
+        req_body => mock.req.body,
+        rsp_code => mock.resp.code,
+        rsp_body => mock.resp.body,
+        rsp_headers => p_headers
     };
     let mock_template = r#"${req_doc}
 ---
-- ## 请求
-
+## 请求
 **${req_method}** `${req_url}`
-
-**Headers:**
+%{ if req_headers }
+#### 请求头:
 |Key|Value|
 |--|--|
-#{for head in req_headers}
-|${head.0}|${head.1}|
-#{endfor}
-**Json Schema**
-
+%{for head in req_headers}|${head.key}|${head.value}|
+%{endfor}
+%{endif}
+%{ if req_body }
+#### 请求体:
 ```json
 ${req_body}
 ```
-
-**Body**
-
-```json
-${req_body}
-```
-
-- ## 响应
-**code:** `200`
-
-**Headers:**
+%{endif}
+---
+## 响应
+**code:** `${rsp_code}`
+%{ if rsp_headers }
+#### 响应头:
 |Key|Value|
 |--|--|
-|Content-Type|application/json|
-
-**Body**
-
+%{for head in rsp_headers}|${head.key}|${head.value}|
+%{endfor}
+%{endif}
+%{ if req_body }
+#### 响应体:
 ```json
-{
-    "a":1,
-    "b":"b"
-}
+${rsp_body}
 ```
-
+%{endif}
 "#;
-todo!()
+    let lock = TEMP_ENV.read().unwrap();
+    lock
+        .render_str(mock_template, ctx)
+        .unwrap_or_else(|s| s.to_string())
 }
 
 fn gen_node_chapter(num: Vec<u32>, node: &TreeUiNode, api: &ApiContext) -> Chapter {
     let des = "无数据".to_owned();
     let content = match node.node_type {
-        NodeType::Collection => api.docs.get(&node.id),
+        NodeType::Collection => {
+            api.docs.get(&node.id).map(|s|s.clone())
+        },
         NodeType::Node => {
             api.tests.get(&node.id).map(|m| {
-                // let mut node_md = String::new();
-                let md = &m.req.remark;
-                // node_md.push_str(md);
-                md
+                rander_mockdata(m)
             })
         },
     }
-    .unwrap_or(&des);
+    .unwrap_or(des);
     let mut path = String::from(ROOT_DIR);
     path.push('/');
     path.push_str(node.id.to_string().as_str());
     Chapter {
         name: node.title.clone(),
-        content: content.to_owned(),
+        content,
         number: Some(SectionNumber(num)),
         sub_items: vec![],
         path: Some(path.into()),

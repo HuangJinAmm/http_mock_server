@@ -18,3 +18,7 @@ pub static PORT: Lazy<String> = Lazy::new(|| {
         Err(_) => "13001".to_owned(),
     }
 });
+
+pub static LOCAL_IP:Lazy<String> = Lazy::new(||{
+    local_ip_address::local_ip().map(|ip|ip.to_string()).unwrap()
+});

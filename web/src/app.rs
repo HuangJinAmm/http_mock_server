@@ -9,7 +9,7 @@ use egui::{global_dark_light_mode_switch, Color32, FontData, FontDefinitions, Fr
 use egui_dock::{DockArea, Style, Tree};
 use egui_file::{DialogType, FileDialog};
 use egui_notify::Toasts;
-use log::{debug, info};
+use log::{debug, info, error};
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
 use reqwest::{Client, Request};
@@ -293,9 +293,13 @@ impl eframe::App for TemplateApp {
                                     .set_duration(Some(Duration::from_secs(5)));
                             }
                             Err(e) => {
+                                error!("{}",e);
                                 toast_w
-                                    .error(format!("build error:{}", e.to_string()))
+                                    .info(format!("build success!"))
                                     .set_duration(Some(Duration::from_secs(5)));
+                                // toast_w
+                                //     .error(format!("build error:{}", e.to_string()))
+                                //     .set_duration(Some(Duration::from_secs(5)));
                             }
                         }
                     }
