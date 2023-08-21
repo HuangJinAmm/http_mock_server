@@ -136,7 +136,7 @@ impl TemplateApp {
                         let mut mock: MockDefine = mockdata.clone().into();
                         mock.id = id;
                         if !mock.req.path.is_empty() && mock.resp.body.is_some() {
-                            match mock_server.add(mock) {
+                            match mock_server.add(mock,mockdata.req.priority.into()) {
                                 Ok(_) => {
                                     debug!("id{}初始添加成功", id);
                                 }
@@ -426,7 +426,7 @@ impl eframe::App for TemplateApp {
                                         if mock.req.path.is_empty() || mock.resp.body.is_none() {
                                             msg = "添加失败：路径或者响应为空".to_owned();
                                         } else {
-                                            msg = match mock_server.add(mock) {
+                                            msg = match mock_server.add(mock,mockdata.req.priority.into()) {
                                                 Ok(_) => {
                                                     add_new_version_mockinfo(id, mockdata);
                                                     format!("已更新配置{}", id)

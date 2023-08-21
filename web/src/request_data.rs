@@ -310,6 +310,7 @@ impl BodyType {
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct ReqMockData {
+    pub priority: u16,
     pub remark: String,
     pub path: String,
     pub method: Method,
@@ -321,6 +322,7 @@ pub struct ReqMockData {
 impl Default for ReqMockData {
     fn default() -> Self {
         Self {
+            priority:0,
             remark: Default::default(),
             path: Default::default(),
             method: Method::GET,

@@ -60,7 +60,7 @@ fn list_all() -> String {
 #[handler]
 fn add_mock(mock: Json<MockDefine>) -> String {
     let mut mock_server = MOCK_SERVER.write().unwrap();
-    match mock_server.add(mock.0) {
+    match mock_server.add(mock.0,0) {
         Ok(_) => "添加成功".to_string(),
         Err(s) => s,
     }

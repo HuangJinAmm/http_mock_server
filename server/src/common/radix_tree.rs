@@ -497,7 +497,7 @@ impl<T> RadixTree<T> {
         if path.is_empty() {
             return;
         }
-        self.add_option(path, None);
+        let _ = self.add_option(path, None);
     }
 
     pub(crate) fn matches(&self, path: &str) -> Option<Matches<T>> {

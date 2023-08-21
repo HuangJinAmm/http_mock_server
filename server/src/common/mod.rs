@@ -120,7 +120,7 @@ impl MockServer {
         }
     }
 
-    pub fn add(&mut self, mock: MockDefine) -> Result<(), String> {
+    pub fn add(&mut self, mock: MockDefine,priority :usize) -> Result<(), String> {
         let mut dispath = self.handler_dispatch.write().unwrap();
         let mut server = self.handlers.write().unwrap();
         let id = mock.id;
@@ -150,7 +150,8 @@ impl MockServer {
         if let Some(matches) = dispath.matches(url.as_str()) {
             let mut exist_data = matches.data.clone();
             if !exist_data.contains(&id) {
-                exist_data.push(id);
+                exist_data.insert(priority, id);
+                // exist_data.push(id);
                 let _route_result = dispath
                     .add(url.as_str(), exist_data)
                     .map_err(|e| e.to_string())?;

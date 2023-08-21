@@ -35,6 +35,7 @@ impl Default for RequestUi {
 impl RequestUi {
     pub fn ui(&mut self, ui: &mut egui::Ui, request_data: &mut ReqMockData, id: u64) {
         let ReqMockData {
+            priority,
             remark: _,
             path,
             method,
@@ -46,7 +47,9 @@ impl RequestUi {
         ui.vertical(|ui| {
             // ui.add(editable_label(remark));
             ui.horizontal(|ui| {
-                ui.label("请求方法:");
+                ui.label("优先级:");
+                ui.add(egui::DragValue::new(priority).speed(1));
+                ui.label("方法:");
                 let com_id = ui.id().with("req_method");
                 egui::ComboBox::from_id_source(com_id)
                     .selected_text(format!("{:?}", method))
@@ -61,7 +64,7 @@ impl RequestUi {
 
                 egui::TextEdit::singleline(path)
                     .desired_width(ui.available_width())
-                    .hint_text("请求路径")
+                    .hint_text("路径")
                     .show(ui);
             });
 

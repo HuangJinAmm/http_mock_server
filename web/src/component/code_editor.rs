@@ -479,41 +479,50 @@ impl AutoSuggester {
         insert_suggest!(sug, "switch", |_s| { "switch EXPR {\\n}\\n".to_owned() });
         sug
     }
+    pub fn mark_down() -> Self {
+        gen_suggest!(
+            "/table" => r"
+            |h1|h2|h3|
+            |---|---|---|
+            |column1|column2|col3|
+            "
+        )
+    }
 
     pub fn template() -> Self {
         let sug = gen_suggest!(
-            "NAME_ZH" => "#{NAME_ZH()}",
-            "NAME_EN" => "#{NAME_EN()}",
-            "NUM" => "#{NUM()}",
-            "NUM_STR" => "#{NUM_STR()}",
-            "HEX" => "#{HEX()}",
-            "STR" => "#{STR()}",
-            "EMAIL" => "#{EMAIL()}",
-            "USERNAME" => "#{USERNAME()}",
-            "IPV4" => "#{IPV4()}",
-            "IPV6" => "#{IPV6()}",
-            "MAC" => "#{MAC()}",
-            "USERAGENT" => "#{USERAGENT()}",
-            "PASSWORD" => "#{PASSWORD()}",
+            "NAME_ZH" => "%{NAME_ZH()}",
+            "NAME_EN" => "%{NAME_EN()}",
+            "NUM" => "%{NUM()}",
+            "NUM_STR" => "%{NUM_STR()}",
+            "HEX" => "%{HEX()}",
+            "STR" => "%{STR()}",
+            "EMAIL" => "%{EMAIL()}",
+            "USERNAME" => "%{USERNAME()}",
+            "IPV4" => "%{IPV4()}",
+            "IPV6" => "%{IPV6()}",
+            "MAC" => "%{MAC()}",
+            "USERAGENT" => "%{USERAGENT()}",
+            "PASSWORD" => "%{PASSWORD()}",
 
-            "UUID" => "#{UUID()}",
-            "UUID_SIMPLE" => "#{UUID_SIMPLE()}",
+            "UUID" => "%{UUID()}",
+            "UUID_SIMPLE" => "%{UUID_SIMPLE()}",
 
-            "NOW" => "#{NOW()}",
-            "DATE_BEFORE" => "#{DATE_BEFORE()}",
-            "DATE_AFTER" => "#{DATE_AFTER()}",
-            "DATE" => "#{DATE()}",
-            "DATE_ADD" => "#{DATE_ADD()}",
+            "NOW" => "%{NOW()}",
+            "DATE_BEFORE" => "%{DATE_BEFORE()}",
+            "DATE_AFTER" => "%{DATE_AFTER()}",
+            "DATE" => "%{DATE()}",
+            "DATE_ADD" => "%{DATE_ADD()}",
 
-            "AES_ECB_EN" => "#{AES_ECB_EN()}",
-            "AES_ECB_DE" => "#{AES_ECB_DE()}",
-            "AES_CBC_EN" => "#{AES_CBC_EN()}",
-            "AES_CBC_DE" => "#{AES_CBC_DE()}",
-            "AES_CTR_EN" => "#{AES_CTR_EN()}",
-            "AES_CTR_DE" => "#{AES_CTR_DE()}",
+            "AES_ECB_EN" => "%{AES_ECB_EN()}",
+            "AES_ECB_DE" => "%{AES_ECB_DE()}",
+            "AES_CBC_EN" => "%{AES_CBC_EN()}",
+            "AES_CBC_DE" => "%{AES_CBC_DE()}",
+            "AES_CTR_EN" => "%{AES_CTR_EN()}",
+            "AES_CTR_DE" => "%{AES_CTR_DE()}",
 
-            "BASE64_EN" => "#{BASE64_EN()}",
-            "BASE64_DE" => "#{BASE64_DE()}",
+            "BASE64_EN" => "%{BASE64_EN()}",
+            "BASE64_DE" => "%{BASE64_DE()}",
 
             "base64Encode" => "base64Encode",
             "AesEcbEnc" => "AesEcbEnc",
