@@ -20,6 +20,11 @@ pub fn build_book(tree_ui: &TreeUi, api: &ApiContext) -> Result<(), anyhow::Erro
     // cfg.book.title = Some("Mock服务器".to_string());
     // cfg.book.authors.push("Mocks".to_string());
     // cfg.book.description = Some("模拟数据服务器文档".into());
+    
+     cfg.set("output.html.fold.enable",true).unwrap();
+     cfg.set("output.html.fold.level",0).unwrap();
+     cfg.set("output.html.playground.editable",true).unwrap();
+     cfg.set("output.html.playground.line-numbers",true).unwrap();
     let sum = Summary {
         title: Some("Mock目录".to_owned()),
         prefix_chapters: vec![],

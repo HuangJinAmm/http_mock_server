@@ -23,7 +23,7 @@ fn main() -> eframe::Result<()> {
             });
     });
     use eframe::IconData;
-    use eframe_template::PORT;
+    use http_mock_server::PORT;
     egui_logger::init().unwrap();
     log::set_max_level(log::LevelFilter::Debug);
     let mut native_options = eframe::NativeOptions::default();
@@ -33,7 +33,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         format!("HTTP模拟服务器-端口{}", *PORT).as_str(),
         native_options,
-        Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(http_mock_server::TemplateApp::new(cc))),
     )
 }
 

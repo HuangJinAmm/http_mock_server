@@ -1,12 +1,12 @@
 [package]
-name = "eframe_template"
-version = "0.1.0"
+name = "http_mock_server"
+version = "0.2.0"
 authors = ["huangjin"]
 edition = "2021"
 rust-version = "1.65"
 
 [features]
-default = []
+default = ["syntect"]
 syntect = ["dep:syntect"]
 
 [dependencies]
@@ -68,10 +68,11 @@ server = {path = "../server"}
 # tracing-subscriber = "0.3"
 reqwest = {version="0.11.10",features=["cookies","multipart","json"]}
 rust-crypto = "0.2.36"
+# gm-rs = "0.8.0"
 rsa = "0.9.2"
 tokio={version="1.29.1",features=["rt","rt-multi-thread"]}
 # tokio-stream = {version = "0.1.14"}
-mdbook = "0.4.34"
+mdbook = "0.4.35"
 local-ip-address = "0.5.4"
 
 

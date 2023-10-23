@@ -78,6 +78,17 @@ impl TextEdit {
             ..Default::default()
         }
     }
+    pub fn new_md() -> Self {
+        let sug = AutoSuggester::mark_down();
+        Self {
+            language: "md".to_owned(),
+            suggest: sug,
+            sug_pos: None,
+            selected_sug: "".to_owned(),
+            sug_str: None,
+            selected_range: None,
+        }
+    }
 
     pub fn new_json() -> Self {
         let sug = AutoSuggester::json_schema();
@@ -282,8 +293,17 @@ impl TextEdit {
                     //处理建议弹框
                     let preword = Self::get_pre_word(text, text_cursor_range);
 
-                    if let Some((word, word_range)) = preword {
-                        *sug_str = Some(suggest.search(&word));
+                    if let Some((word, mut word_range)) = preword {
+                        let sug_word;
+                        if word.starts_with("\"") || word.starts_with("'") || word.starts_with("{") {
+                            sug_word = &word[1..];
+                            word_range.start += 1;
+                            *selected_range = Some(word_range);
+                        } else {
+                            sug_word = &word[..];
+                            *selected_range = Some(word_range);
+                        }
+                        *sug_str = Some(suggest.search(sug_word));
                         if sug_str.as_ref().unwrap().len() > 0 && sug_pos.is_none() {
                             if let Some(pos) = ui.input(|p| p.pointer.hover_pos()) {
                                 *sug_pos = Some(pos);
@@ -292,7 +312,6 @@ impl TextEdit {
                         if sug_str.as_ref().unwrap().len() == 0 {
                             *sug_pos = None;
                         }
-                        *selected_range = Some(word_range);
                     }
                 }
             }
@@ -436,20 +455,20 @@ impl AutoSuggester {
         insert_suggest!(sug, "faker::uuid_simple", |_s| "faker::uuid_simple()"
             .to_owned());
 
-        insert_suggest!(sug, "faker::now", |_s| "faker::now(\"%Y-%m-%dT%H:%M:%S\")"
+        insert_suggest!(sug, "faker::now", |_s| "faker::now(\"$Y-%m-%dT%H:%M:%S\")"
             .to_owned());
 
         insert_suggest!(sug, "faker::datetime", |_s| {
-            "faker::datetime(\"%Y-%m-%dT%H:%M:%S\")".to_owned()
+            "faker::datetime(\"$Y-%m-%dT%H:%M:%S\")".to_owned()
         });
         insert_suggest!(sug, "faker::datetime_after", |_s| {
-            "faker::datetime_after(\"%Y-%m-%dT%H:%M:%S\",\"2020-05-03T00:00:00\")".to_owned()
+            "faker::datetime_after(\"$Y-%m-%dT%H:%M:%S\",\"2020-05-03T00:00:00\")".to_owned()
         });
         insert_suggest!(sug, "faker::datetime_before", |_s| {
-            "faker::datetime_before(\"%Y-%m-%dT%H:%M:%S\",\"2020-05-03T00:00:00\")".to_owned()
+            "faker::datetime_before(\"$Y-%m-%dT%H:%M:%S\",\"2020-05-03T00:00:00\")".to_owned()
         });
         insert_suggest!(sug, "faker::date_add", |_s| {
-            "faker::date_add(\"%Y-%m-%dT%H:%M:%S\",\"2020-05-03T00:00:00\")".to_owned()
+            "faker::date_add(\"$Y-%m-%dT%H:%M:%S\",\"2020-05-03T00:00:00\")".to_owned()
         });
 
         insert_suggest!(sug, "log::info", |_s| { r#"log::info("msg")"#.to_owned() });
@@ -485,44 +504,54 @@ impl AutoSuggester {
             |h1|h2|h3|
             |---|---|---|
             |column1|column2|col3|
-            "
+            ",
+            "/todo" => " - [ ] ",
+            "/h1" => "# head1",
+            "/h2" => "## head2",
+            "/h3" => "### head3",
+            "/h4" => "#### head4",
+            "/h5" => "##### head5",
+            "/h6" => "###### head6",
+            "/code" => "\r\n```\r\n```\r\n",
+            "/img" => "![alt 属性文本](图片地址)",
+            "/link" => "[title](url)"
         )
     }
 
     pub fn template() -> Self {
         let sug = gen_suggest!(
-            "NAME_ZH" => "%{NAME_ZH()}",
-            "NAME_EN" => "%{NAME_EN()}",
-            "NUM" => "%{NUM()}",
-            "NUM_STR" => "%{NUM_STR()}",
-            "HEX" => "%{HEX()}",
-            "STR" => "%{STR()}",
-            "EMAIL" => "%{EMAIL()}",
-            "USERNAME" => "%{USERNAME()}",
-            "IPV4" => "%{IPV4()}",
-            "IPV6" => "%{IPV6()}",
-            "MAC" => "%{MAC()}",
-            "USERAGENT" => "%{USERAGENT()}",
-            "PASSWORD" => "%{PASSWORD()}",
+            "NAME_ZH" => "${NAME_ZH()}",
+            "NAME_EN" => "${NAME_EN()}",
+            "NUM" => "${NUM()}",
+            "NUM_STR" => "${NUM_STR()}",
+            "HEX" => "${HEX()}",
+            "STR" => "${STR()}",
+            "EMAIL" => "${EMAIL()}",
+            "USERNAME" => "${USERNAME()}",
+            "IPV4" => "${IPV4()}",
+            "IPV6" => "${IPV6()}",
+            "MAC" => "${MAC()}",
+            "USERAGENT" => "${USERAGENT()}",
+            "PASSWORD" => "${PASSWORD()}",
 
-            "UUID" => "%{UUID()}",
-            "UUID_SIMPLE" => "%{UUID_SIMPLE()}",
+            "UUID" => "${UUID()}",
+            "UUID_SIMPLE" => "${UUID_SIMPLE()}",
 
-            "NOW" => "%{NOW()}",
-            "DATE_BEFORE" => "%{DATE_BEFORE()}",
-            "DATE_AFTER" => "%{DATE_AFTER()}",
-            "DATE" => "%{DATE()}",
-            "DATE_ADD" => "%{DATE_ADD()}",
+            "NOW" => "${NOW()}",
+            "DATE_BEFORE" => "${DATE_BEFORE()}",
+            "DATE_AFTER" => "${DATE_AFTER()}",
+            "DATE" => "${DATE()}",
+            "DATE_ADD" => "${DATE_ADD()}",
 
-            "AES_ECB_EN" => "%{AES_ECB_EN()}",
-            "AES_ECB_DE" => "%{AES_ECB_DE()}",
-            "AES_CBC_EN" => "%{AES_CBC_EN()}",
-            "AES_CBC_DE" => "%{AES_CBC_DE()}",
-            "AES_CTR_EN" => "%{AES_CTR_EN()}",
-            "AES_CTR_DE" => "%{AES_CTR_DE()}",
+            "AES_ECB_EN" => "${AES_ECB_EN()}",
+            "AES_ECB_DE" => "${AES_ECB_DE()}",
+            "AES_CBC_EN" => "${AES_CBC_EN()}",
+            "AES_CBC_DE" => "${AES_CBC_DE()}",
+            "AES_CTR_EN" => "${AES_CTR_EN()}",
+            "AES_CTR_DE" => "${AES_CTR_DE()}",
 
-            "BASE64_EN" => "%{BASE64_EN()}",
-            "BASE64_DE" => "%{BASE64_DE()}",
+            "BASE64_EN" => "${BASE64_EN()}",
+            "BASE64_DE" => "${BASE64_DE()}",
 
             "base64Encode" => "base64Encode",
             "AesEcbEnc" => "AesEcbEnc",

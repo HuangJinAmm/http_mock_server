@@ -192,7 +192,7 @@ pub struct CollectionUi {
 impl Default for CollectionUi {
     fn default() -> Self {
         Self {
-            script_editor: TextEdit::new("md"),
+            script_editor: TextEdit::new_md(),
             cache: Default::default(),
         }
     }

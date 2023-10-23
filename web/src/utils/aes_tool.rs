@@ -133,3 +133,4 @@ const BLOCK_SIZE: usize = 16;
 fn cipher_length(input_len: usize) -> usize {
     ((input_len / BLOCK_SIZE) + 1) * BLOCK_SIZE
 }
+

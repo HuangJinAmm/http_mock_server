@@ -352,7 +352,7 @@ impl eframe::App for TemplateApp {
         }
 
         egui::SidePanel::left("side_panel")
-            .max_width(240.0)
+            // .max_width(240.0)
             .show(ctx, |ui| {
                 egui::ScrollArea::both().show(ui, |ui| {
                     // ui.with_layout(Layout::top_down(egui::Align::LEFT), |ui|{

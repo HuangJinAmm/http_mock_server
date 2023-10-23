@@ -130,7 +130,7 @@ impl TreeUi {
         ui.horizontal(|ui| {
             ui.add(
                 egui::TextEdit::singleline(&mut self.filter)
-                    .desired_width(180.0)
+                    .desired_width(200.0)
                     .hint_text("筛选条件"),
             );
 
@@ -484,11 +484,12 @@ impl TreeUiNode {
                     }
                     if let Some(h) = handler {
                         h.ui(ui, self, |ui| {
-                            ui.label("🖥");
+                            // ui.label("🖥");
+                            ui.label(RichText::new(format!("(🆔:{})", self.id)).color(egui::Color32::RED));
                         });
                     }
 
-                    ui.label(RichText::new(format!("(🆔:{})", self.id)).color(egui::Color32::RED));
+                    // ui.label(RichText::new(format!("(🆔:{})", self.id)).color(egui::Color32::RED));
                     let mut context_resp = Option::None;
                     let select_resp = ui
                         .toggle_value(&mut selected, self.title.clone())
