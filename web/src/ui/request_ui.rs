@@ -186,12 +186,14 @@ impl RequestUi {
 }
 
 pub struct CollectionUi {
+    preview:bool,
     script_editor: TextEdit,
     cache: CommonMarkCache,
 }
 impl Default for CollectionUi {
     fn default() -> Self {
         Self {
+            preview: false,
             script_editor: TextEdit::new_md(),
             cache: Default::default(),
         }
@@ -200,23 +202,23 @@ impl Default for CollectionUi {
 
 impl CollectionUi {
     pub fn ui(&mut self, ui: &mut egui::Ui, data: &mut String, id: u64) {
-        let req_id = ui.id().with(id);
-        let mut preview_state = ui.data_mut(|d| d.get_temp::<bool>(req_id).unwrap_or(false));
+        // let req_id = ui.id().with(id);
+        // let mut preview_state = ui.data_mut(|d| d.get_temp::<bool>(req_id).unwrap_or(false));
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 ui.label("文档");
                 let add_header = ui.small_button("预览");
                 if add_header.clicked() {
-                    preview_state = !preview_state;
+                    self.preview = !self.preview;
                 }
             });
-            if preview_state {
+            if self.preview {
                 CommonMarkViewer::new("viewer").show(ui, &mut self.cache, &data);
             } else {
                 self.script_editor.ui(ui, data, id);
             }
         });
-        ui.data_mut(|d| d.insert_temp(req_id, preview_state));
+        // ui.data_mut(|d| d.insert_temp(req_id, preview_state));
     }
 }
 
