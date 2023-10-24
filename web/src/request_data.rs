@@ -322,7 +322,7 @@ pub struct ReqMockData {
 impl Default for ReqMockData {
     fn default() -> Self {
         Self {
-            priority:0,
+            priority: 0,
             remark: Default::default(),
             path: Default::default(),
             method: Method::GET,

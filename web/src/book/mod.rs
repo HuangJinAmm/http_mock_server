@@ -1,30 +1,37 @@
+use std::collections::BTreeMap;
+
 use mdbook::book::{Chapter, SectionNumber, Summary};
 use mdbook::config::Config;
 use mdbook::{BookItem, MDBook};
 use minijinja::context;
 use server::template::TEMP_ENV;
 
-use crate::PORT;
-use crate::LOCAL_IP;
 use crate::api_context::ApiContext;
 use crate::component::header_ui::SelectKeyValueItem;
-use crate::component::tree_ui::{TreeUi, TreeUiNode, NodeType};
+use crate::component::tree_ui::{NodeType, TreeUi, TreeUiNode};
 use crate::request_data::MockData;
+use crate::LOCAL_IP;
+use crate::PORT;
 
 const ROOT_DIR: &str = "./docs";
 
-pub fn build_book(tree_ui: &TreeUi, api: &ApiContext) -> Result<(), anyhow::Error> {
+pub fn build_book(
+    tree_ui: TreeUi,
+    docs: BTreeMap<u64, String>,
+    tests: BTreeMap<u64, MockData>,
+) -> Result<(), anyhow::Error> {
     let mut cfg = Config::default();
     cfg.book.multilingual = true;
     cfg.build.create_missing = false;
     // cfg.book.title = Some("Mock服务器".to_string());
     // cfg.book.authors.push("Mocks".to_string());
     // cfg.book.description = Some("模拟数据服务器文档".into());
-    
-     cfg.set("output.html.fold.enable",true).unwrap();
-     cfg.set("output.html.fold.level",0).unwrap();
-     cfg.set("output.html.playground.editable",true).unwrap();
-     cfg.set("output.html.playground.line-numbers",true).unwrap();
+
+    cfg.set("output.html.fold.enable", true).unwrap();
+    cfg.set("output.html.fold.level", 0).unwrap();
+    cfg.set("output.html.playground.editable", true).unwrap();
+    cfg.set("output.html.playground.line-numbers", true)
+        .unwrap();
     let sum = Summary {
         title: Some("Mock目录".to_owned()),
         prefix_chapters: vec![],
@@ -34,7 +41,7 @@ pub fn build_book(tree_ui: &TreeUi, api: &ApiContext) -> Result<(), anyhow::Erro
     let mut book = MDBook::load_with_config_and_summary(ROOT_DIR, cfg, sum).expect("创建book失败");
     let mut num: u32 = 1;
     for level_one_node in tree_ui.get_sub_nodes() {
-        let level_one_chapter = gen_chapter(vec![num], level_one_node, api);
+        let level_one_chapter = gen_chapter(vec![num], level_one_node, &docs, &tests);
         book.book.push_item(BookItem::Chapter(level_one_chapter));
         book.book.push_item(mdbook::BookItem::Separator);
         num += 1;
@@ -42,14 +49,19 @@ pub fn build_book(tree_ui: &TreeUi, api: &ApiContext) -> Result<(), anyhow::Erro
     book.build()
 }
 
-fn gen_chapter(num: Vec<u32>, node: &TreeUiNode, api: &ApiContext) -> Chapter {
+fn gen_chapter(
+    num: Vec<u32>,
+    node: &TreeUiNode,
+    docs: &BTreeMap<u64, String>,
+    tests: &BTreeMap<u64, MockData>,
+) -> Chapter {
     let count_vec = num.clone();
-    let mut p = gen_node_chapter(num, node, api);
+    let mut p = gen_node_chapter(num, node, docs, tests);
     let mut count = 1;
     for sub in node.get_sub_nodes() {
         let mut num_vec = count_vec.clone();
         num_vec.push(count);
-        let mut sub_chapter = gen_chapter(num_vec, sub, api);
+        let mut sub_chapter = gen_chapter(num_vec, sub, docs, tests);
         sub_chapter.parent_names.push(node.title.clone());
         p.sub_items.push(mdbook::BookItem::Chapter(sub_chapter));
         count += 1;
@@ -57,21 +69,42 @@ fn gen_chapter(num: Vec<u32>, node: &TreeUiNode, api: &ApiContext) -> Chapter {
     p
 }
 
-fn rander_mockdata(mock:&MockData) -> String {
-
-    let r_headers:Vec<&SelectKeyValueItem> = mock.req.headers.iter().filter(|h|h.selected && !h.key.is_empty()).collect();
-    let p_headers:Vec<&SelectKeyValueItem> = mock.resp.headers.iter().filter(|h|h.selected && !h.key.is_empty()).collect();
+fn rander_mockdata(mock: &MockData) -> String {
+    let r_headers: Vec<&SelectKeyValueItem> = mock
+        .req
+        .headers
+        .iter()
+        .filter(|h| h.selected && !h.key.is_empty())
+        .collect();
+    let p_headers: Vec<&SelectKeyValueItem> = mock
+        .resp
+        .headers
+        .iter()
+        .filter(|h| h.selected && !h.key.is_empty())
+        .collect();
     let server;
     if !mock.resp.is_proxy {
-        server = format!("http://{}:{}{}",LOCAL_IP.as_str(),PORT.as_str(),mock.req.path); 
+        server = format!(
+            "http://{}:{}{}",
+            LOCAL_IP.as_str(),
+            PORT.as_str(),
+            mock.req.path
+        );
     } else {
-        server = format!("http://{}:{}{} 或者 {}{}",LOCAL_IP.as_str(),PORT.as_str(),mock.req.path,mock.resp.dist_url.clone(),mock.req.path);
+        server = format!(
+            "http://{}:{}{} 或者 {}{}",
+            LOCAL_IP.as_str(),
+            PORT.as_str(),
+            mock.req.path,
+            mock.resp.dist_url.clone(),
+            mock.req.path
+        );
     }
 
     let ctx = context! {
         req_doc => mock.req.remark,
         req_method => mock.req.method.to_string(),
-        req_url => server, 
+        req_url => server,
         req_headers => r_headers,
         req_body => mock.req.body,
         rsp_code => mock.resp.code,
@@ -113,22 +146,20 @@ ${rsp_body}
 %{endif}
 "#;
     let lock = TEMP_ENV.read().unwrap();
-    lock
-        .render_str(mock_template, ctx)
+    lock.render_str(mock_template, ctx)
         .unwrap_or_else(|s| s.to_string())
 }
 
-fn gen_node_chapter(num: Vec<u32>, node: &TreeUiNode, api: &ApiContext) -> Chapter {
+fn gen_node_chapter(
+    num: Vec<u32>,
+    node: &TreeUiNode,
+    docs: &BTreeMap<u64, String>,
+    tests: &BTreeMap<u64, MockData>,
+) -> Chapter {
     let des = "无数据".to_owned();
     let content = match node.node_type {
-        NodeType::Collection => {
-            api.docs.get(&node.id).map(|s|s.clone())
-        },
-        NodeType::Node => {
-            api.tests.get(&node.id).map(|m| {
-                rander_mockdata(m)
-            })
-        },
+        NodeType::Collection => docs.get(&node.id).map(|s| s.clone()),
+        NodeType::Node => tests.get(&node.id).map(|m| rander_mockdata(m)),
     }
     .unwrap_or(des);
     let mut path = String::from(ROOT_DIR);

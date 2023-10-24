@@ -295,7 +295,8 @@ impl TextEdit {
 
                     if let Some((word, mut word_range)) = preword {
                         let sug_word;
-                        if word.starts_with("\"") || word.starts_with("'") || word.starts_with("{") {
+                        if word.starts_with("\"") || word.starts_with("'") || word.starts_with("{")
+                        {
                             sug_word = &word[1..];
                             word_range.start += 1;
                             *selected_range = Some(word_range);

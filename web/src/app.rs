@@ -9,12 +9,13 @@ use egui::{global_dark_light_mode_switch, Color32, FontData, FontDefinitions, Fr
 use egui_dock::{DockArea, Style, Tree};
 use egui_file::{DialogType, FileDialog};
 use egui_notify::Toasts;
-use log::{debug, info, error};
+use log::{debug, error, info};
 use once_cell::sync::Lazy;
 use once_cell::sync::OnceCell;
 use reqwest::{Client, Request};
 // use rhai::Scope;
 use server::common::{mock::MockDefine, MOCK_SERVER};
+use std::thread;
 use std::time::Duration;
 use std::{io::BufReader, sync::Mutex};
 use std::{path::PathBuf, sync::Arc};
@@ -136,7 +137,7 @@ impl TemplateApp {
                         let mut mock: MockDefine = mockdata.clone().into();
                         mock.id = id;
                         if !mock.req.path.is_empty() && mock.resp.body.is_some() {
-                            match mock_server.add(mock,mockdata.req.priority.into()) {
+                            match mock_server.add(mock, mockdata.req.priority.into()) {
                                 Ok(_) => {
                                     debug!("id{}初始添加成功", id);
                                 }
@@ -284,25 +285,30 @@ impl eframe::App for TemplateApp {
                 });
 
                 if ui.button("build book").clicked() {
-                    let build_res = build_book(&self.tree_ui, &self.api_data);
-                    if let Ok(mut toast_w) = toast.lock() {
-                        match build_res {
-                            Ok(_) => {
-                                toast_w
-                                    .info(format!("build success!"))
-                                    .set_duration(Some(Duration::from_secs(5)));
-                            }
-                            Err(e) => {
-                                error!("{}",e);
-                                toast_w
-                                    .info(format!("build success!"))
-                                    .set_duration(Some(Duration::from_secs(5)));
-                                // toast_w
-                                //     .error(format!("build error:{}", e.to_string()))
-                                //     .set_duration(Some(Duration::from_secs(5)));
+                    let tree_ui = self.tree_ui.clone();
+                    let docs = self.api_data.docs.clone();
+                    let tests = self.api_data.tests.clone();
+                    thread::spawn(move || {
+                        let build_res = build_book(tree_ui, docs, tests);
+                        if let Ok(mut toast_w) = toast.lock() {
+                            match build_res {
+                                Ok(_) => {
+                                    toast_w
+                                        .info(format!("build success!"))
+                                        .set_duration(Some(Duration::from_secs(5)));
+                                }
+                                Err(e) => {
+                                    error!("{}", e);
+                                    toast_w
+                                        .info(format!("build success!"))
+                                        .set_duration(Some(Duration::from_secs(5)));
+                                    // toast_w
+                                    //     .error(format!("build error:{}", e.to_string()))
+                                    //     .set_duration(Some(Duration::from_secs(5)));
+                                }
                             }
                         }
-                    }
+                    });
                 }
             });
         });
@@ -426,7 +432,9 @@ impl eframe::App for TemplateApp {
                                         if mock.req.path.is_empty() || mock.resp.body.is_none() {
                                             msg = "添加失败：路径或者响应为空".to_owned();
                                         } else {
-                                            msg = match mock_server.add(mock,mockdata.req.priority.into()) {
+                                            msg = match mock_server
+                                                .add(mock, mockdata.req.priority.into())
+                                            {
                                                 Ok(_) => {
                                                     add_new_version_mockinfo(id, mockdata);
                                                     format!("已更新配置{}", id)

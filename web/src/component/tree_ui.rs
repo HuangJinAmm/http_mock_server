@@ -28,7 +28,7 @@ pub enum NodeType {
     Node,
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct TreeUi {
     ///选中的节点
     selected: u64,
@@ -101,7 +101,9 @@ impl TreeUi {
 
     /// 返回新的节点id,(复制的id,粘贴的id),只能粘贴节点
     pub fn parse_node(&mut self, parse_pos: Vec<u64>) -> Option<(u64, u64)> {
-        let Action::Copy((copy_id,title))  = self.action_tmp.clone() else {return None;};
+        let Action::Copy((copy_id, title)) = self.action_tmp.clone() else {
+            return None;
+        };
         self.id_count = self.id_count + 1;
         let new_id = self.id_count;
         if self
@@ -128,12 +130,6 @@ impl TreeUi {
         let mut open_action = None;
 
         ui.horizontal(|ui| {
-            ui.add(
-                egui::TextEdit::singleline(&mut self.filter)
-                    .desired_width(200.0)
-                    .hint_text("筛选条件"),
-            );
-
             if self.open {
                 if ui.small_button("📕").clicked() {
                     self.open = false;
@@ -145,6 +141,11 @@ impl TreeUi {
                     open_action = Some(true);
                 }
             }
+            ui.add(
+                egui::TextEdit::singleline(&mut self.filter)
+                    .desired_width(f32::INFINITY)
+                    .hint_text("筛选条件"),
+            );
         });
 
         //弹框出路action_tmp里的事情
@@ -485,7 +486,10 @@ impl TreeUiNode {
                     if let Some(h) = handler {
                         h.ui(ui, self, |ui| {
                             // ui.label("🖥");
-                            ui.label(RichText::new(format!("(🆔:{})", self.id)).color(egui::Color32::RED));
+                            ui.label(
+                                RichText::new(format!("(🆔:{})", self.id))
+                                    .color(egui::Color32::RED),
+                            );
                         });
                     }
 
