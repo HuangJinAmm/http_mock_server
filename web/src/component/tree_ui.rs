@@ -1,7 +1,8 @@
 use core::fmt::Debug;
 use egui::{Align2, Id, InnerResponse, RichText, Ui, Window};
-use egui_dnd::{utils::shift_vec, DragDropItem, DragDropUi, Handle};
+use egui_dnd::{dnd, utils::shift_vec, DragDropItem, Handle};
 use log::info;
+use std::hash::Hash;
 
 #[derive(Clone, PartialEq, Debug, serde::Deserialize, serde::Serialize)]
 pub enum Action {
@@ -57,7 +58,6 @@ impl TreeUi {
                 title: "ApiPost".to_owned(),
                 node_type: NodeType::Collection,
                 sub_items: Vec::new(),
-                drag_drop_ui: DragDropUi::default(),
             },
         }
     }
@@ -86,18 +86,31 @@ impl TreeUi {
         self.action_tmp.clone()
     }
 
+    pub fn get_mut_node(&mut self, mut id_vec: Vec<u64>) -> Option<&mut TreeUiNode> {
+        let _ = id_vec.pop();
+        let mut node_tmp = &mut self.sub_node;
+        while let Some(id) = id_vec.pop() {
+            if let Some(node) = node_tmp.find_node(id) {
+                node_tmp = node;
+            } else {
+                return None;
+            }
+        }
+        Some(node_tmp)
+    }
+
     pub fn del(&mut self, mut del: Vec<u64>) -> Option<Vec<u64>> {
         //第一个节点只有一个，直接删掉
         let _node_id = del.pop();
         self.sub_node.delete_item(del)
     }
 
-    pub fn rename(&mut self, mut rename: Vec<u64>) {
-        //第一个节点只有一个，直接删掉
-        let _node_id = rename.pop();
-        let title = &self.rename;
-        self.sub_node.rename(rename, title);
-    }
+    // pub fn rename(&mut self, mut rename: Vec<u64>) {
+    //     //第一个节点只有一个，直接删掉
+    //     let _node_id = rename.pop();
+    //     let title = &self.rename;
+    //     self.sub_node.rename(rename, title);
+    // }
 
     /// 返回新的节点id,(复制的id,粘贴的id),只能粘贴节点
     pub fn parse_node(&mut self, parse_pos: Vec<u64>) -> Option<(u64, u64)> {
@@ -143,7 +156,7 @@ impl TreeUi {
             }
             ui.add(
                 egui::TextEdit::singleline(&mut self.filter)
-                    .desired_width(f32::INFINITY)
+                    .desired_width(240.0)
                     .hint_text("筛选条件"),
             );
         });
@@ -208,28 +221,43 @@ impl TreeUi {
                     }
                 }
                 Action::Rename(rename) => {
-                    if let Some(rename_resp) = Window::new("重命名")
-                        .anchor(Align2::CENTER_CENTER, (1.0, 1.0))
-                        .collapsible(false)
-                        .show(ui.ctx(), |ui| {
-                            ui.text_edit_singleline(&mut self.rename);
-                            ui.horizontal(|ui| {
-                                if ui.button("确认").clicked() {
-                                    self.rename(rename);
-                                    self.popup = false;
-                                }
-                                if ui.button("取消").clicked() {
-                                    self.popup = false;
-                                }
+                    let mut sub_pop = true;
+                    let resp = self
+                        .get_mut_node(rename.clone())
+                        .map_or(Action::Keep, |rename_node| {
+                            if let Some(rename_resp) = Window::new("重命名")
+                                .anchor(Align2::CENTER_CENTER, (1.0, 1.0))
+                                .collapsible(false)
+                                .show(ui.ctx(), |ui| {
+                                    // ui.text_edit_singleline(&mut self.rename);
+                                    ui.text_edit_singleline(&mut rename_node.title);
+                                    ui.horizontal(|ui| {
+                                        if ui.button("确认").clicked() {
+                                            // self.rename(rename);
+                                            sub_pop = false;
+                                        }
+                                        if ui.button("取消").clicked() {
+                                            let rename_id = Id::new("tree_ui_rename_cache");
+                                            let cache_title = ui
+                                                .data_mut(|d| d.get_temp::<String>(rename_id))
+                                                .unwrap_or_default();
+                                            rename_node.title = cache_title;
+                                            sub_pop = false;
+                                        }
+                                        Action::Rename(rename)
+                                    })
+                                    .inner
+                                })
+                            {
+                                rename_resp.inner.unwrap_or(Action::Keep)
+                            } else {
                                 Action::Keep
-                            })
-                            .inner
-                        })
-                    {
-                        rename_resp.inner.unwrap_or(Action::Keep)
-                    } else {
-                        Action::Keep
+                            }
+                        });
+                    if !sub_pop {
+                        self.popup = false;
                     }
+                    resp
                 }
                 _ => Action::Keep,
             };
@@ -264,8 +292,8 @@ impl TreeUi {
                 //内部传上来的动作，放tmp里
                 Action::Rename(rename) => {
                     self.popup = true;
-                    self.action_tmp = Action::Rename(rename);
-                    Action::Keep
+                    self.action_tmp = Action::Rename(rename.clone());
+                    Action::Rename(rename)
                 }
                 //内部传上来的动作，放tmp里
                 Action::Copy(cop) => {
@@ -295,8 +323,13 @@ pub struct TreeUiNode {
     pub node_type: NodeType,
     // sub_items: BTreeMap<u64, TreeUiNode>,
     sub_items: Vec<TreeUiNode>,
-    #[serde(skip)]
-    drag_drop_ui: DragDropUi,
+}
+
+impl Hash for TreeUiNode {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.title.hash(state);
+    }
 }
 
 impl Debug for TreeUiNode {
@@ -434,7 +467,6 @@ impl TreeUiNode {
             title: String::from(title),
             sub_items: Vec::new(),
             node_type,
-            drag_drop_ui: DragDropUi::default(),
         }
     }
 
@@ -484,7 +516,7 @@ impl TreeUiNode {
                         }
                     }
                     if let Some(h) = handler {
-                        h.ui(ui, self, |ui| {
+                        h.ui(ui, |ui| {
                             // ui.label("🖥");
                             ui.label(
                                 RichText::new(format!("(🆔:{})", self.id))
@@ -498,17 +530,16 @@ impl TreeUiNode {
                     let select_resp = ui
                         .toggle_value(&mut selected, self.title.clone())
                         .context_menu(|ui| {
-                            // if ui.button("添加集合").clicked() {
-                            //     ui.close_menu();
-                            //     context_resp =
-                            //         Some(Action::Add((vec![self.id], NodeType::Collection)));
-                            // }
                             if ui.button("复制节点").clicked() {
                                 ui.close_menu();
                                 context_resp = Some(Action::Copy((self.id, self.title.clone())));
                             }
                             if ui.button("重命名").clicked() {
                                 ui.close_menu();
+                                let rename_id = Id::new("tree_ui_rename_cache");
+                                ui.data_mut(|d| {
+                                    d.insert_temp::<String>(rename_id, self.title.clone())
+                                });
                                 context_resp = Some(Action::Rename(vec![self.id]));
                             }
                             if ui.button("删除").clicked() {
@@ -539,7 +570,7 @@ impl TreeUiNode {
                 let (_, head_rep, body_resp) = head
                     .show_header(ui, |ui| {
                         if let Some(h) = handler {
-                            h.ui(ui, self, |ui| {
+                            h.ui(ui, |ui| {
                                 ui.label("🗁");
                             });
                         }
@@ -567,6 +598,10 @@ impl TreeUiNode {
                                 }
                                 if ui.button("重命名").clicked() {
                                     ui.close_menu();
+                                    let rename_id = Id::new("tree_ui_rename_cache");
+                                    ui.data_mut(|d| {
+                                        d.insert_temp::<String>(rename_id, self.title.clone())
+                                    });
                                     context_resp = Some(Action::Rename(vec![self.id]));
                                 }
                                 if self.id != 0 && ui.button("删除").clicked() {
@@ -608,9 +643,8 @@ impl TreeUiNode {
         open: Option<bool>,
     ) -> Action {
         let mut sub_resp = Action::Keep;
-        let drag_resp = self
-            .drag_drop_ui
-            .ui(ui, self.sub_items.iter_mut(), |item, ui, handler| {
+        let drag_resp =
+            dnd(ui, self.id).show(self.sub_items.iter_mut(), |ui, item, handler, _pressed| {
                 // if item.title.contains(flilter) {
                 match item.ui_impl(ui, selected_str, flilter, open, Some(handler)) {
                     Action::Delete(mut d) => {
@@ -644,10 +678,7 @@ impl TreeUiNode {
                 // }
             });
 
-        if let Some(response) = drag_resp.completed {
-            info!("{}-{}", response.from, response.to);
-            shift_vec(response.from, response.to, &mut self.sub_items);
-        }
+        drag_resp.update_vec(&mut self.sub_items);
 
         sub_resp
         // for sub in self.sub_items.iter_mut() {
@@ -671,11 +702,5 @@ impl TreeUiNode {
         //     }
         // }
         // Action::Keep
-    }
-}
-
-impl DragDropItem for TreeUiNode {
-    fn id(&self) -> Id {
-        Id::new(self.id)
     }
 }

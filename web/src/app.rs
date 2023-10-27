@@ -6,7 +6,7 @@ use crate::{
     request_data::{MockData, RequestData, ResponseData},
 };
 use egui::{global_dark_light_mode_switch, Color32, FontData, FontDefinitions, Frame, Id, Window};
-use egui_dock::{DockArea, Style, Tree};
+use egui_dock::{DockArea, DockState, Style, Tree};
 use egui_file::{DialogType, FileDialog};
 use egui_notify::Toasts;
 use log::{debug, error, info};
@@ -63,8 +63,7 @@ pub static TOKIO_RT: Lazy<Runtime> = Lazy::new(|| {
 pub struct TemplateApp {
     show_log: bool,
 
-    pub tree: Tree<String>,
-    tree_ui: TreeUi,
+    pub tree: DockState<String>,
     api_data: ApiContext,
     #[serde(skip)]
     opened_file: Option<PathBuf>,
@@ -78,13 +77,12 @@ impl Default for TemplateApp {
     fn default() -> Self {
         let mut api_context = ApiContext::new();
         api_context.insert_collecton(0, "".to_owned());
+        let tabs = ["导航", "文档"].map(str::to_string).into_iter().collect();
+        let dock_state = DockState::new(tabs);
         Self {
             show_log: false,
-            tree_ui: TreeUi::new(),
-            // tabs:vec![],
-            tree: Tree::new(vec![]),
+            tree: dock_state,
             api_data: api_context,
-            // script_engine: ScriptEngine::new(),
             open_file_dialog: None,
             opened_file: None,
         }
@@ -130,7 +128,7 @@ impl TemplateApp {
     }
 
     fn init_active(&self) {
-        if let Some(ids) = self.tree_ui.get_all_active_nodes() {
+        if let Some(ids) = self.api_data.tree_ui.get_all_active_nodes() {
             if let Ok(mut mock_server) = MOCK_SERVER.write() {
                 for id in ids {
                     if let Some(mockdata) = self.api_data.tests.get(&id) {
@@ -266,10 +264,9 @@ impl eframe::App for TemplateApp {
                             vec![
                                 "请求".to_owned(),
                                 "响应".to_owned(),
-                                // "设置".to_owned(),
                                 "文档".to_owned(),
                                 "记录".to_owned(),
-                                // "脚本".to_owned(),
+                                "导航".to_owned(),
                             ]
                         })
                         .iter()
@@ -285,7 +282,7 @@ impl eframe::App for TemplateApp {
                 });
 
                 if ui.button("build book").clicked() {
-                    let tree_ui = self.tree_ui.clone();
+                    let tree_ui = self.api_data.tree_ui.clone();
                     let docs = self.api_data.docs.clone();
                     let tests = self.api_data.tests.clone();
                     thread::spawn(move || {
@@ -316,13 +313,13 @@ impl eframe::App for TemplateApp {
         if let Some(dialog) = &mut self.open_file_dialog {
             if dialog.show(ctx).selected() {
                 if let Some(file) = dialog.path() {
-                    self.opened_file = Some(file.clone());
+                    self.opened_file = Some(file.to_path_buf());
                     match dialog.dialog_type() {
                         DialogType::OpenFile => {
                             if let Ok(rfile) = std::fs::File::open(file.clone()) {
                                 let reader = BufReader::new(rfile);
-                                let app: TemplateApp = serde_json::from_reader(reader).unwrap();
-                                *self = app;
+                                let app: ApiContext = serde_json::from_reader(reader).unwrap();
+                                self.api_data = app;
                                 // self.records = app.records;
                                 // self.records_list = app.records_list;
                                 // self.list_selected = app.list_selected;
@@ -331,10 +328,11 @@ impl eframe::App for TemplateApp {
                         }
                         DialogType::SaveFile => {
                             let app_json =
-                                std::fs::File::open(file.clone()).unwrap_or_else(|_err| {
-                                    std::fs::File::create(file.clone()).unwrap()
+                                std::fs::File::open(file).unwrap_or_else(|_err| {
+                                    std::fs::File::create(file).unwrap()
                                 });
-                            if let Err(err) = serde_json::to_writer_pretty(app_json, self) {
+                            if let Err(err) = serde_json::to_writer_pretty(app_json, &self.api_data)
+                            {
                                 if let Ok(mut toast_w) = toast.lock() {
                                     toast_w
                                         .error(format!("save file error:{}", err.to_string()))
@@ -356,119 +354,6 @@ impl eframe::App for TemplateApp {
                 }
             }
         }
-
-        egui::SidePanel::left("side_panel")
-            // .max_width(240.0)
-            .show(ctx, |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    // ui.with_layout(Layout::top_down(egui::Align::LEFT), |ui|{
-                    match self.tree_ui.ui_impl(ui) {
-                        tree_ui::Action::Keep => {
-                            //ignore
-                        }
-                        tree_ui::Action::Delete(dels) => {
-                            if let Ok(mut mock_server) = MOCK_SERVER.write() {
-                                for del_id in dels {
-                                    info!("删除{}", del_id);
-                                    self.api_data.delete_collecton(del_id);
-                                    if let Some(mock_define) = self.api_data.delete_test(del_id) {
-                                        let mock: MockDefine = mock_define.into();
-                                        mock_server.delete(mock)
-                                    }
-                                }
-                            } else {
-                                info!("删除失败，请稍后再试");
-                            }
-                        }
-                        tree_ui::Action::Add((adds, node_type)) => {
-                            let add_id = adds.first().unwrap().to_owned();
-                            info!("添加{},{:?}", &add_id, &node_type);
-                            match node_type {
-                                tree_ui::NodeType::Collection => {
-                                    self.api_data.insert_collecton(add_id, "".to_string());
-                                }
-                                tree_ui::NodeType::Node => {
-                                    self.api_data.insert_test(add_id, MockData::default());
-                                }
-                            }
-                        }
-                        tree_ui::Action::Rename(_adds) => {
-                            //基本上不用处理
-                            info!("重命名")
-                        }
-                        tree_ui::Action::Selected((selected_id, selected_title)) => {
-                            let selected = *selected_id.first().unwrap_or(&0);
-                            self.api_data.selected = selected_id;
-                            if let Ok(mut toast_w) = toast.lock() {
-                                toast_w
-                                    .info(format!("已选中{}-标题{}", selected, selected_title))
-                                    .set_duration(Some(Duration::from_secs(5)));
-                            }
-                        }
-                        tree_ui::Action::Copy(cop) => {
-                            if let Ok(mut toast_w) = toast.lock() {
-                                toast_w
-                                    .info(format!("已复制{}", cop.0))
-                                    .set_duration(Some(Duration::from_secs(5)));
-                            }
-                        }
-                        tree_ui::Action::Parse(mut parse) => {
-                            //复制动作
-                            let _ = parse.pop();
-                            if let Some((sid, did)) = self.tree_ui.parse_node(parse) {
-                                if let Some(copyed) = self.api_data.tests.get(&sid) {
-                                    let parse = copyed.clone();
-                                    self.api_data.insert_test(did, parse);
-                                }
-                            }
-                        }
-                        tree_ui::Action::SyncToServer((id, active)) => {
-                            let mut msg = String::new();
-                            if let Some(mockdata) = self.api_data.tests.get(&id) {
-                                if let Ok(mut mock_server) = MOCK_SERVER.write() {
-                                    if active {
-                                        let mut mock: MockDefine = mockdata.clone().into();
-                                        mock.id = id;
-                                        if mock.req.path.is_empty() || mock.resp.body.is_none() {
-                                            msg = "添加失败：路径或者响应为空".to_owned();
-                                        } else {
-                                            msg = match mock_server
-                                                .add(mock, mockdata.req.priority.into())
-                                            {
-                                                Ok(_) => {
-                                                    add_new_version_mockinfo(id, mockdata);
-                                                    format!("已更新配置{}", id)
-                                                }
-                                                Err(e) => {
-                                                    // self..disable_item(id);
-                                                    e
-                                                }
-                                            };
-                                        }
-                                    } else {
-                                        let mut mock: MockDefine = mockdata.clone().into();
-                                        mock.id = id;
-                                        mock_server.delete(mock);
-                                        msg = format!("已取消配置{}", id)
-                                    };
-                                } else {
-                                    msg = format!("获取锁失败，请重试");
-                                }
-                            }
-                            match toast.lock() {
-                                Ok(mut toast_w) => {
-                                    toast_w.info(msg).set_duration(Some(Duration::from_secs(5)));
-                                }
-                                Err(e) => {
-                                    info!("{}", e.to_string())
-                                }
-                            }
-                        }
-                    }
-                    ui.add_space(ui.available_height());
-                });
-                //    });
-            });
 
         egui::CentralPanel::default()
             .frame(Frame::central_panel(&ctx.style()).inner_margin(0.))

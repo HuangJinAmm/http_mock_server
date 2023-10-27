@@ -186,7 +186,7 @@ impl RequestUi {
 }
 
 pub struct CollectionUi {
-    preview:bool,
+    preview: bool,
     script_editor: TextEdit,
     cache: CommonMarkCache,
 }
