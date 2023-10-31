@@ -35,7 +35,7 @@ impl ValueTarget<String> for StringBodyTarget {
     fn parse_from_request(&self, req: &HttpMockRequest) -> Option<String> {
         req.body
             .as_ref()
-            .map(|b| String::from_utf8_lossy(b).to_string()) // FIXME: Avoid copying here. Create a "ValueRefTarget".
+            .map(|b| b.to_owned()) // FIXME: Avoid copying here. Create a "ValueRefTarget".
     }
 }
 
@@ -52,19 +52,7 @@ impl ValueTarget<Value> for JSONSchemaTarget {
         if body.is_none() || body.unwrap().is_empty() {
             return None;
         }
-        let body_vec = body.unwrap();
-        if let Ok(body_str) = String::from_utf8(body_vec.to_owned()) {
-            // let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
-            // let dealed_body = re.replace_all(&body_str, "");
-            match serde_json::from_str(body_str.as_ref()) {
-                Ok(v) => return Some(v),
-                Err(e) => {
-                    log::trace!("paser json error:{}", e);
-                    return None;
-                }
-            }
-        }
-        match serde_json::from_slice(body.unwrap()) {
+        match serde_json::from_str(body.unwrap()) {
             Err(e) => {
                 log::trace!("Cannot parse json value: {}", e);
                 None
@@ -90,19 +78,17 @@ impl ValueTarget<Value> for JSONBodyTarget {
         if body.is_none() || body.unwrap().is_empty() {
             return None;
         }
-        let body_vec = body.unwrap();
-        if let Ok(body_str) = String::from_utf8(body_vec.to_owned()) {
+        // let body_str = body.unwrap();
             // let re = regex::Regex::new("\\{#.+?#\\}").unwrap();
             // let dealed_body = re.replace_all(&body_str, "");
-            match serde_json::from_str(body_str.as_ref()) {
-                Ok(v) => return Some(v),
-                Err(e) => {
-                    log::trace!("paser json error:{}", e);
-                    return None;
-                }
-            }
-        }
-        match serde_json::from_slice(body.unwrap()) {
+        // match serde_json::from_str(body_str) {
+        //     Ok(v) => return Some(v),
+        //     Err(e) => {
+        //         log::trace!("paser json error:{}", e);
+        //         return None;
+        //     }
+        // }
+        match serde_json::from_str(body.unwrap()) {
             Err(e) => {
                 log::trace!("Cannot parse json value: {}", e);
                 None

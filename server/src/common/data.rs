@@ -19,8 +19,8 @@ pub struct HttpMockRequest {
     pub method: Option<String>,
     pub headers: Option<HashMap<String, String>>,
     pub query_params: Option<HashMap<String, String>>,
-    pub body: Option<Vec<u8>>,
-    pub body_schema: Option<Vec<u8>>,
+    pub body: Option<String>,
+    pub body_schema: Option<String>,
 }
 
 #[poem::async_trait]
@@ -128,7 +128,8 @@ impl HttpMockRequest {
     }
 
     pub fn body(&mut self, arg: Vec<u8>) {
-        self.body = Some(arg);
+        let body = String::from_utf8(arg).unwrap_or("非法的UTF8编码".to_string());
+        self.body = Some(body);
     }
 }
 
@@ -137,8 +138,8 @@ impl HttpMockRequest {
 pub struct MockServerHttpResponse {
     pub status: Option<u16>,
     pub headers: Option<Vec<(String, String)>>,
-    #[serde(default, with = "opt_vector_serde_base64")]
-    pub body: Option<Vec<u8>>,
+    // #[serde(default, with = "opt_vector_serde_base64")]
+    pub body: Option<String>,
     pub delay: Option<Duration>,
 }
 

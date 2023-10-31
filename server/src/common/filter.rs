@@ -124,10 +124,10 @@ impl MockHandler for JinjaTemplateHandler {
         let mut body = Value::UNDEFINED;
         let request = req.req.clone();
         if let Some(b) = &request.body {
-            if let Ok(body_json_value) = serde_json::from_slice::<Value>(b.as_slice()) {
+            if let Ok(body_json_value) = serde_json::from_slice::<Value>(b.as_bytes()) {
                 body = body_json_value;
             } else {
-                body = Value::from_safe_string(String::from_utf8_lossy(b.as_slice()).to_string());
+                body = Value::from_safe_string(b.to_owned());
             }
         }
         let HttpMockRequest {
@@ -147,14 +147,13 @@ impl MockHandler for JinjaTemplateHandler {
                 .resp
                 .body
                 .clone()
-                .map(|b| String::from_utf8(b).unwrap_or_default())
             {
                 let mut mock_resp = req.mock_define.resp.clone();
                 let rendered = match env.render_str(&body_tmp, temp_ctx.clone()) {
                     Ok(s) => s,
                     Err(e) => e.to_string(),
                 };
-                mock_resp.body = Some(rendered.as_bytes().to_vec());
+                mock_resp.body = Some(rendered);
                 ret_mock_resp = Some(mock_resp);
             }
 
@@ -218,8 +217,6 @@ impl MockHandler for RelayServerHandler {
                         r.text()
                             .await
                             .unwrap_or_else(|e| e.to_string())
-                            .as_bytes()
-                            .to_vec(),
                     );
                     Some(MockServerHttpResponse {
                         status,
@@ -230,7 +227,7 @@ impl MockHandler for RelayServerHandler {
                 }
                 Err(e) => {
                     log::error!("转发响应错误:{:#?}", &e);
-                    let body = Some(e.to_string().as_bytes().to_vec());
+                    let body = Some(e.to_string());
                     Some(MockServerHttpResponse {
                         status: Some(500),
                         headers: None,

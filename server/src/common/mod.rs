@@ -120,7 +120,7 @@ impl MockServer {
         }
     }
 
-    pub fn add(&mut self, mock: MockDefine,priority :usize) -> Result<(), String> {
+    pub fn add(&mut self, mock: MockDefine, priority: usize) -> Result<(), String> {
         let mut dispath = self.handler_dispatch.write().unwrap();
         let mut server = self.handlers.write().unwrap();
         let id = mock.id;

@@ -1,0 +1,25 @@
+{
+    port:13001,
+    apis:[
+        {
+            remark: "",
+            req_script: null,
+            resp_script: null,
+            req: {
+                path: "/a/b",
+                method: "GET",
+                headers: null,
+                query_params: null,
+                body: "hello world",
+                body_schema: null
+            },
+            resp: {
+                "status": 200,
+                "headers": null,
+                "body": "test",
+                "delay": null
+            },
+            "relay_url": null
+        },
+    ]
+}
