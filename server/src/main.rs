@@ -10,20 +10,22 @@ async fn main() {
     // .with(fmt::layer())
     // .init();
     if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "server=debug");
+        std::env::set_var("RUST_LOG", "mock_server=DEBUG,server=DEBUG");
     }
     env_logger::init();
     // tracing_subscriber::fmt::init();
-    // log::set_max_level(log::LevelFilter::Debug);
+    // log::set_max_level(log::LevelFilter::Info);
     log::info!("启动....");
     let api = parse_config("./api.json5").unwrap();
     let url = format!("0.0.0.0:{}",api.port);
-    let mut mock_server = MOCK_SERVER.write().unwrap();
-    for mock in api.apis {
-        match mock_server.add(mock.clone(), 0) {
-            Ok(_) => log::info!("add:{:?}",&mock),
-            Err(s) => log::error!("add {:?},error:{}",&mock,s),
-        };
+    {
+        let mut mock_server = MOCK_SERVER.write().unwrap();
+        for mock in api.apis {
+            match mock_server.add(mock.clone(), 0) {
+                Ok(_) => log::info!("add:{:?}",&mock),
+                Err(s) => log::error!("add {:?},error:{}",&mock,s),
+            };
+        }
     }
     log::info!("服务地址:{}",url); 
     let _ = server::serve(&url).await;
