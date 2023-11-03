@@ -150,7 +150,8 @@ impl MockServer {
         if let Some(matches) = dispath.matches(url.as_str()) {
             let mut exist_data = matches.data.clone();
             if !exist_data.contains(&id) {
-                exist_data.insert(priority, id);
+                let index = priority.min(exist_data.len());
+                exist_data.insert(index, id);
                 // exist_data.push(id);
                 let _route_result = dispath
                     .add(url.as_str(), exist_data)
