@@ -214,12 +214,6 @@ impl eframe::App for TemplateApp {
                 Toasts::default().with_anchor(egui_notify::Anchor::BottomRight),
             ))
         });
-        if self.show_log {
-            Window::new("Log").title_bar(true).show(ctx, |ui| {
-                // draws the logger ui.
-                egui_logger::logger_ui(ui);
-            });
-        }
 
         // #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -248,9 +242,6 @@ impl eframe::App for TemplateApp {
                         frame.close();
                     }
                 });
-                if ui.selectable_label(self.show_log, "打开日志").clicked() {
-                    self.show_log = !self.show_log;
-                }
                 if !frame.is_web() {
                     ui.menu_button("Zoom", |ui| {
                         egui::gui_zoom::zoom_menu_buttons(ui, frame.info().native_pixels_per_point);
@@ -266,6 +257,7 @@ impl eframe::App for TemplateApp {
                                 "响应".to_owned(),
                                 "文档".to_owned(),
                                 "记录".to_owned(),
+                                "日志".to_owned(),
                                 "导航".to_owned(),
                             ]
                         })

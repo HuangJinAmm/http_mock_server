@@ -53,6 +53,10 @@ impl TabViewer for ApiContext {
                 }
             }
             "记录" => {
+                    // draws the logger ui.
+                    egui_logger::logger_ui(ui);
+            }
+            "记录" => {
                 let hist_list = get_history_list(selected);
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for (ver_name, ver) in hist_list {

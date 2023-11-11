@@ -467,7 +467,7 @@ impl Into<MockDefine> for MockData {
 
         match self.req.body_type {
             BodyType::Schema => {
-                req.body_schema = Some(template_str.as_bytes().to_vec());
+                req.body_schema = Some(template_str);
             }
             BodyType::Json => {
                 req.body(template_str.as_bytes().to_vec());
@@ -501,7 +501,7 @@ impl Into<MockDefine> for MockData {
             }
         };
 
-        resp.body = Some(template_str.as_bytes().to_vec());
+        resp.body = Some(template_str);
 
         resp.delay = Some(Duration::from_millis(mock_ret.delay.into()));
 
