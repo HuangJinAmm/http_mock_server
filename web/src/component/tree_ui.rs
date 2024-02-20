@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use egui::{Align2, Id, InnerResponse, RichText, Ui, Window};
+use egui::{Align2, Id, InnerResponse, RichText, Window, Ui};
 use egui_dnd::{dnd, utils::shift_vec, DragDropItem, Handle};
 use log::info;
 use std::hash::Hash;
